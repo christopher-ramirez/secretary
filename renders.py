@@ -42,11 +42,13 @@ except ImportError:
     from django.template import Template as TemplateEngine
 
 
-PARAGRAPH_TAG = '{% paragraph_tag %}'
-TABLEROW_TAG = '{% tablerow_tag %}'
+PARAGRAPH_TAG = '{% control_paragraph %}'
+TABLEROW_TAG = '{% control_tablerow %}'
+TABLECELL_TAG = '{% control_tablecell %}'
 
 OOO_PARAGRAPH_NODE = 'text:p'
 OOO_TABLEROW_NODE = 'table:table-row'
+OOO_TABLECELL_NODE = 'table:table-cell'
 
 class BaseRender():
     """
@@ -88,8 +90,8 @@ class BaseRender():
             Once the XML have been prepared, this routine is called
             to do the actual rendering.
         """
-        # print self.xml_document.toprettyxml()
-        template = TemplateEngine(self.xml_document.toxml())
+        
+        template = TemplateEngine(self.xml_document.toprettyxml())
         return template.render(**self.template_vars)
 
 
@@ -139,6 +141,12 @@ class BaseRender():
             replace_node = self.get_parent_of(node, OOO_TABLEROW_NODE)
             note_text = replace_node.toxml().replace(TABLEROW_TAG, '')
 
+        elif node_text.find(TABLECELL_TAG) > -1:
+            replace_node = self.get_parent_of(node, OOO_TABLECELL_NODE)
+            note_text = replace_node.toxml().replace(TABLECELL_TAG, '')
+
+
+
 
         if replace_node is not None:
             paragraph_parent = replace_node.parentNode
@@ -174,13 +182,13 @@ if __name__ == "__main__":
     }
 
     countries = [
-        {'country': 'United States', 'capital': 'Washington'},
-        {'country': 'England', 'capital': 'London'},
-        {'country': 'Japan', 'capital': 'Tokio'},
-        {'country': 'Nicaragua', 'capital': 'Managua'},
+        {'country': 'United States', 'capital': 'Washington', 'cities': ['miami', 'new york', 'california', 'texas', 'atlanta']},
+        {'country': 'England', 'capital': 'London', 'cities': ['gales']},
+        {'country': 'Japan', 'capital': 'Tokio', 'cities': ['hiroshima', 'nagazaki']},
+        {'country': 'Nicaragua', 'capital': 'Managua', 'cities': [u'león', 'granada', 'masaya']},
         {'country': 'Argentina', 'capital': 'Buenos aires'},
         {'country': 'Chile', 'capital': 'Santiago'},
-        {'country': 'Mexico', 'capital': 'MExico City'},
+        {'country': 'Mexico', 'capital': 'MExico City', 'cities': ['puebla', 'cancun']},
     ]
 
 
