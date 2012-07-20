@@ -43,6 +43,10 @@ except ImportError:
 
 
 PARAGRAPH_TAG = '{% paragraph_tag %}'
+TABLEROW_TAG = '{% tablerow_tag %}'
+
+OOO_PARAGRAPH_NODE = 'text:p'
+OOO_TABLEROW_NODE = 'table:table-row'
 
 class BaseRender():
     """
@@ -55,24 +59,24 @@ class BaseRender():
 
     def __init__(self, xml_doc, **template_args):
         self.template_vars = template_args
-        self.xml_document = xml.dom.minidom.parse(xml_doc)
+        self.xml_document = xml.dom.minidom.parseString(xml_doc)
         body = self.xml_document.getElementsByTagName('office:body')
         self.content_body = body and body[0]
 
     # ------------------------------------------------------------------------@
 
 
-    def get_paragraph_parent(self, node):
+    def get_parent_of(self, node, parent_type):
         """
-            Returns the first node's parent with name "text:p"
+            Returns the first node's parent with name  of parent_type
             If parent "text:p" is not found, returns None.
         """
 
         if hasattr(node, 'parentNode'):
-            if node.parentNode.nodeName.lower() == 'text:p':
+            if node.parentNode.nodeName.lower() == parent_type:
                 return node.parentNode
             else:
-                return get_paragraph_parent(node.parentNode)
+                return self.get_parent_of(node.parentNode, parent_type)
         else:
             return None
 
@@ -84,57 +88,66 @@ class BaseRender():
             Once the XML have been prepared, this routine is called
             to do the actual rendering.
         """
+        # print self.xml_document.toprettyxml()
         template = TemplateEngine(self.xml_document.toxml())
         return template.render(**self.template_vars)
+
 
     # -----------------------------------------------------------------------
 
 
-    def scan_child_nodes(self, nodes):
+    def prepare_document(self):
+        """
+            Search in every paragraph node in the document.
+        """
+        paragraphs = self.content_body.getElementsByTagName('text:p')
+        
+        for paragraph in paragraphs:
+            self.scan_paragraph_child_nodes(paragraph)
+            
+
+    def scan_paragraph_child_nodes(self, nodes):
         """
 
         """
+
         if nodes.hasChildNodes():
             child_nodes = nodes.childNodes
 
             for node in child_nodes:
                 if node.nodeType == node.TEXT_NODE:
-                    node_text = node.data.lower()
-
-                    # replace a paragraph node with contained tags
-                    # if tag PARAGRAPH_TAG is in paragraph content.
-
-                    if node_text.find(PARAGRAPH_TAG) > -1:
-                        # Get this node text:p parent
-                        paragraph_node = self.get_paragraph_parent(node)
-                        paragraph_parent = paragraph_node.parentNode
-
-
-                        # Discar PARAGRAPH_TAG
-                        pgraph_node_text = \
-                            paragraph_node.toxml().replace(PARAGRAPH_TAG, '')
-
-                        # replace text:p node's XML with its contained templates tags.
-                        new_node_text = \
-                            ' '.join(re.findall('(\{.*?\})', pgraph_node_text))
-
-                        new_node = xml_document.createTextNode(new_node_text)
-                        paragraph_parent.replaceChild(new_node, paragraph_node)
-
+                    self.handle_special_tags(node)
                 else:
                     if node.hasChildNodes():
-                        scan_child_nodes(node)
+                        self.scan_paragraph_child_nodes(node)
 
     # -----------------------------------------------------------------------
 
 
-    def handle_special_tags(self):
+    def handle_special_tags(self, node):
         """
 
         """
-        paragraphs = self.content_body.getElementsByTagName('text:p')
-        for paragraph in paragraphs:
-            self.scan_child_nodes(paragraph)
+        node_text = node.data.lower()
+        replace_node = None
+
+        if node_text.find(PARAGRAPH_TAG) > -1:
+            replace_node = self.get_parent_of(node, OOO_PARAGRAPH_NODE)
+            note_text = replace_node.toxml().replace(PARAGRAPH_TAG, '')
+
+        elif node_text.find(TABLEROW_TAG) > -1:
+            replace_node = self.get_parent_of(node, OOO_TABLEROW_NODE)
+            note_text = replace_node.toxml().replace(TABLEROW_TAG, '')
+
+
+        if replace_node is not None:
+            paragraph_parent = replace_node.parentNode
+
+            new_node_text = \
+                ' '.join(re.findall('(\{.*?\})', note_text))
+
+            new_node = self.xml_document.createTextNode(new_node_text)
+            paragraph_parent.replaceChild(new_node, replace_node)
 
     # -----------------------------------------------------------------------
 
@@ -145,22 +158,68 @@ class BaseRender():
             to parse template engine tags
         """
         
-        self.handle_special_tags()
-
+        self.prepare_document()
         return self.render_with_engine()
 
     # -----------------------------------------------------------------------
-    
+
+
 
 if __name__ == "__main__":
 
-    data = {
-        'name': u'Christopher Ramirez',
-        'country': 'Nicaragua'
+    from datetime import datetime
+
+    document = {
+        'datetime': datetime.now()
     }
 
-    render = BaseRender('content.xml', record=data)
-    print render.render()
+    countries = [
+        {'country': 'United States', 'capital': 'Washington'},
+        {'country': 'England', 'capital': 'London'},
+        {'country': 'Japan', 'capital': 'Tokio'},
+        {'country': 'Nicaragua', 'capital': 'Managua'},
+        {'country': 'Argentina', 'capital': 'Buenos aires'},
+        {'country': 'Chile', 'capital': 'Santiago'},
+        {'country': 'Mexico', 'capital': 'MExico City'},
+    ]
+
+
+    # ODF is just a zipfile
+    input = zipfile.ZipFile( 'simple_template.odt', "r" )
+
+    # we cannot write directly to HttpResponse, so use StringIO
+    # text = StringIO.StringIO()
+    text = open('rendered.odt', 'wb')
+    # output document
+    output = zipfile.ZipFile( text, "w" )
+       
+    # go through the files in source
+    for zi in input.filelist:
+        out = input.read( zi.filename )
+
+        if zi.filename == 'content.xml':
+            render = BaseRender(out, trademark={'owner':{}}, document=document, countries=countries)
+            out = render.render().encode('ascii', 'xmlcharrefreplace')
+
+        elif zi.filename == 'mimetype':
+            # mimetype is stored within the ODF
+            mimetype = out 
+
+        output.writestr( zi.filename, out,
+                         zipfile.ZIP_DEFLATED )
+
+    # close and finish
+    input.close()
+    output.close()
+
+    print "Template rendering finished! Check rendered.odt file."
+
+    # output_file.open('rendered.odt', 'w')
+    # output_file.write(output)
+    # output_file.close()
+
+    # render = BaseRender('content.xml', record=data)
+    # print render.render()
 
     # xml_document = xml.dom.minidom.parse('content.xml')
     # doc_body = xml_document.getElementsByTagName('office:body')
