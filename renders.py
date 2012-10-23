@@ -33,6 +33,7 @@ ODT document content to be processed by jinja2 or Django template system.
 import re
 import os
 import zipfile
+import StringIO
 import xml.dom.minidom
 
 
@@ -171,6 +172,37 @@ class BaseRender():
 
     # -----------------------------------------------------------------------
 
+
+
+def render_template(template, **template_args):
+    """
+        Renders *template* file using *template_args* variables.
+        Returns the ODF file generated.
+    """
+    
+    input = zipfile.ZipFile(template, "r" )
+    text = StringIO.StringIO()
+    output = zipfile.ZipFile(text, 'a')
+       
+    # go through the files in source
+    for zi in input.filelist:
+        out = input.read( zi.filename )
+
+        if zi.filename == 'content.xml':
+            render = BaseRender(out, **template_args)
+            out = render.render().encode('ascii', 'xmlcharrefreplace')
+
+        elif zi.filename == 'mimetype':
+            # mimetype is stored within the ODF
+            mimetype = out 
+
+        output.writestr(zi.filename, out, zipfile.ZIP_DEFLATED)
+
+    # close and finish
+    input.close()
+    output.close()
+    
+    return text.getvalue()
 
 
 if __name__ == "__main__":
