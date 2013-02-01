@@ -35,7 +35,7 @@ import os
 import zipfile
 import StringIO
 import xml.dom.minidom
-
+import sys
 
 try:
     from jinja2 import Template as TemplateEngine
@@ -196,7 +196,10 @@ def render_template(template, **template_args):
             # mimetype is stored within the ODF
             mimetype = out 
 
-        output.writestr(zi.filename, out, zipfile.ZIP_DEFLATED)
+        if sys.version_info >= (2, 7):
+            output.writestr(zi.filename, out, zipfile.ZIP_DEFLATED)
+        else:
+            output.writestr(zi.filename, out)
 
     # close and finish
     input.close()
