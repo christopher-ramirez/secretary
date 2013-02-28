@@ -24,7 +24,7 @@
 
 """
 Secretary
-Take the power of Django or Jinja2 templates to OpenOffice and LibreOffice.
+Take the power of Jinja2 templates to OpenOffice and LibreOffice.
 
 This file implements BaseRender. BaseRender prepares a XML which describes
 ODT document content to be processed by jinja2 or Django template system.  
@@ -32,15 +32,12 @@ ODT document content to be processed by jinja2 or Django template system.
 
 import re
 import os
+import sys
 import zipfile
 import StringIO
 import xml.dom.minidom
-import sys
-
-try:
-    from jinja2 import Template as TemplateEngine
-except ImportError:
-    from django.template import Template as TemplateEngine
+from os.path import isfile
+from jinja2 import Template as TemplateEngine
 
 
 PARAGRAPH_TAG = '{% control_paragraph %}'
@@ -174,6 +171,9 @@ class BaseRender():
 
 
 
+def render_odt(template, **args):
+    pass
+
 def render_template(template, **template_args):
     """
         Renders *template* file using *template_args* variables.
@@ -209,7 +209,7 @@ def render_template(template, **template_args):
 
 
 if __name__ == "__main__":
-
+    from sys import argv
     from datetime import datetime
 
     document = {
@@ -226,22 +226,23 @@ if __name__ == "__main__":
         {'country': 'Mexico', 'capital': 'MExico City', 'cities': ['puebla', 'cancun']},
     ]
 
-
     # ODF is just a zipfile
     input = zipfile.ZipFile( 'simple_template.odt', "r" )
+    
+    if len(argv) > 1:
+        if isfile(argv[1]):
+            input = zipfile.ZipFile(argv[1])
 
-    # we cannot write directly to HttpResponse, so use StringIO
-    # text = StringIO.StringIO()
+
     text = open('rendered.odt', 'wb')
-    # output document
     output = zipfile.ZipFile( text, "w" )
        
-    # go through the files in source
+    # go through the files in input
     for zi in input.filelist:
         out = input.read( zi.filename )
 
         if zi.filename == 'content.xml':
-            render = BaseRender(out, trademark={'owner':{}}, document=document, countries=countries)
+            render = BaseRender(out, document=document, countries=countries)
             out = render.render().encode('ascii', 'xmlcharrefreplace')
 
         elif zi.filename == 'mimetype':
@@ -256,22 +257,6 @@ if __name__ == "__main__":
     output.close()
 
     print "Template rendering finished! Check rendered.odt file."
-
-    # output_file.open('rendered.odt', 'w')
-    # output_file.write(output)
-    # output_file.close()
-
-    # render = BaseRender('content.xml', record=data)
-    # print render.render()
-
-    # xml_document = xml.dom.minidom.parse('content.xml')
-    # doc_body = xml_document.getElementsByTagName('office:body')
-    # doc_body = doc_body and doc_body[0]
-
-    # template = Template(doc_body.toprettyxml())
-
-    # print template.render( name='Christopher :)' )
-
 
     
     
