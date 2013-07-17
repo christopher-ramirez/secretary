@@ -57,7 +57,7 @@ class BaseRender():
         render.render
     """
 
-    def __init__(self, xml_doc, **template_args):
+    def __init__(self, xml_doc, template_args):
         self.template_vars = template_args
         self.xml_document = xml.dom.minidom.parseString(xml_doc)
         body = self.xml_document.getElementsByTagName('office:body')
@@ -144,14 +144,14 @@ class BaseRender():
             note_text = replace_node.toxml().replace(TABLECELL_TAG, '')
 
 
-
+        import logging
 
         if replace_node is not None:
             paragraph_parent = replace_node.parentNode
 
             new_node_text = \
                 ' '.join(re.findall('(\{.*?\})', note_text))
-
+            logging.error(new_node_text)
             new_node = self.xml_document.createTextNode(new_node_text)
             paragraph_parent.replaceChild(new_node, replace_node)
 
@@ -174,22 +174,22 @@ class BaseRender():
 def render_odt(template, **args):
     pass
 
-def render_template(template, **template_args):
+def render_template(template, **kwargs):
     """
-        Renders *template* file using *template_args* variables.
+        Renders *template* file using *kwargs* variables.
         Returns the ODF file generated.
     """
-    
-    input = zipfile.ZipFile(template, "r" )
-    text = StringIO.StringIO()
-    output = zipfile.ZipFile(text, 'a')
+    input_template = StringIO.StringIO(template)
+    input = zipfile.ZipFile(input_template, "r" )
+    rendered = StringIO.StringIO()
+    output = zipfile.ZipFile(rendered, 'a')
        
     # go through the files in source
     for zi in input.filelist:
         out = input.read( zi.filename )
 
         if zi.filename == 'content.xml':
-            render = BaseRender(out, **template_args)
+            render = BaseRender(out, kwargs)
             out = render.render().encode('ascii', 'xmlcharrefreplace')
 
         elif zi.filename == 'mimetype':
@@ -205,7 +205,18 @@ def render_template(template, **template_args):
     input.close()
     output.close()
     
-    return text.getvalue()
+    return rendered.getvalue()
+
+
+def render_template_file(file, **kwargs):
+    """
+        Render a ODF template file
+    """
+
+    template_string = StringIO.StringIO()
+    template_string.write(file)
+
+    return render_template(template_string, **kwargs)
 
 
 if __name__ == "__main__":
