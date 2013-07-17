@@ -60,7 +60,9 @@ class BaseRender():
     def __init__(self, xml_doc, template_args):
         self.template_vars = template_args
         self.xml_document = xml.dom.minidom.parseString(xml_doc)
-        body = self.xml_document.getElementsByTagName('office:body')
+        body = self.xml_document.getElementsByTagName('office:body') or \
+               self.xml_document.getElementsByTagName('office:master-styles') 
+
         self.content_body = body and body[0]
 
     # ------------------------------------------------------------------------@
@@ -188,7 +190,7 @@ def render_template(template, **kwargs):
     for zi in input.filelist:
         out = input.read( zi.filename )
 
-        if zi.filename == 'content.xml':
+        if zi.filename in ('content.xml', 'styles.xml'):
             render = BaseRender(out, kwargs)
             out = render.render().encode('ascii', 'xmlcharrefreplace')
 
