@@ -94,12 +94,17 @@ class BaseRender():
             to do the actual rendering.
         """
         
-        template = TemplateEngine(
-            self.xml_document.toprettyxml() if self.debug else self.xml_document.toxml()
-        )
-
+        template = TemplateEngine(self.xml_document.toxml())
         rendered = template.render(**self.template_vars)
-        # rendered = rendered.replace('\n', '<text:line-break>');
+
+        # Replace all \n in field values with a ODT line break
+        rendered = rendered.replace('\n', '<text:line-break/>')
+
+        # if self.debug:
+        #     # Return a indented XML
+        #     return xml.dom.minidom.parseString(
+        #         rendered.encode('ascii', 'xmlcharrefreplace')).toprettyxml()
+
 
         return rendered
 
