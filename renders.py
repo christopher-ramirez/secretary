@@ -33,6 +33,7 @@ ODT document content to be processed by jinja2 or Django template system.
 import re
 import os
 import sys
+import logging
 import zipfile
 import StringIO
 import xml.dom.minidom
@@ -61,7 +62,7 @@ class BaseRender():
         self.template_vars = template_args
         self.xml_document = xml.dom.minidom.parseString(xml_doc)
         self.debug = template_args.get('debug', False)
-        
+
         body = self.xml_document.getElementsByTagName('office:body') or \
                self.xml_document.getElementsByTagName('office:master-styles') 
 
@@ -97,20 +98,58 @@ class BaseRender():
             self.xml_document.toprettyxml() if self.debug else self.xml_document.toxml()
         )
 
-        return template.render(**self.template_vars)
+        rendered = template.render(**self.template_vars)
+        # rendered = rendered.replace('\n', '<text:line-break>');
+
+        return rendered
 
 
     # -----------------------------------------------------------------------
 
+    def create_text_span_node(self, content):
+        span = self.xml_document.createElement('text:span')
+        text_node = self.create_text_node(content)
+        span.appendChild(text_node)
+
+        return span
+
+    def create_text_node(self, text):
+        """
+        Creates a text node
+        """
+        return self.xml_document.createTextNode(text)
+
 
     def prepare_document(self):
         """
-            Search in every paragraph node in the document.
+            Search in every field node in the document and
+            replace it with a <text:span> field
         """
-        paragraphs = self.content_body.getElementsByTagName('text:p')
-        
-        for paragraph in paragraphs:
-            self.scan_paragraph_child_nodes(paragraph)
+        fields = self.content_body.getElementsByTagName('text:text-input')
+
+        for field in fields:
+            if field.hasChildNodes():
+                field_content = field.childNodes[0].data
+
+                jinja_tags = re.findall(r'(\{.*?\}*})', field_content)
+                if not jinja_tags:
+                    # Field does not contains jinja template tags
+                    continue
+
+                field_description = field.getAttribute('text:description')
+
+                if not field_description:
+                    new_node = self.create_text_span_node(field_content)
+                else:
+                    if field_description in \
+                        ['text:p', 'table:table-row', 'table:table-cell']:
+                        field = self.get_parent_of(field, field_description)
+
+                    new_node = self.create_text_node(field_content)
+
+                parent = field.parentNode
+                parent.insertBefore(new_node, field)
+                parent.removeChild(field)
             
 
     def scan_paragraph_child_nodes(self, nodes):
@@ -150,8 +189,6 @@ class BaseRender():
             replace_node = self.get_parent_of(node, OOO_TABLECELL_NODE)
             note_text = replace_node.toxml().replace(TABLECELL_TAG, '')
 
-
-        import logging
 
         if replace_node is not None:
             paragraph_parent = replace_node.parentNode
