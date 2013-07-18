@@ -60,6 +60,8 @@ class BaseRender():
     def __init__(self, xml_doc, template_args):
         self.template_vars = template_args
         self.xml_document = xml.dom.minidom.parseString(xml_doc)
+        self.debug = template_args.get('debug', False)
+        
         body = self.xml_document.getElementsByTagName('office:body') or \
                self.xml_document.getElementsByTagName('office:master-styles') 
 
@@ -91,7 +93,10 @@ class BaseRender():
             to do the actual rendering.
         """
         
-        template = TemplateEngine(self.xml_document.toxml())
+        template = TemplateEngine(
+            self.xml_document.toprettyxml() if self.debug else self.xml_document.toxml()
+        )
+
         return template.render(**self.template_vars)
 
 
