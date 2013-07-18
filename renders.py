@@ -91,7 +91,7 @@ class BaseRender():
             to do the actual rendering.
         """
         
-        template = TemplateEngine(self.xml_document.toprettyxml())
+        template = TemplateEngine(self.xml_document.toxml())
         return template.render(**self.template_vars)
 
 
