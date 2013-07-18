@@ -38,7 +38,7 @@ import zipfile
 import StringIO
 import xml.dom.minidom
 from os.path import isfile
-from jinja2 import Environment, Template as TemplateEngine
+from jinja2 import Environment, Undefined
 
 
 PARAGRAPH_TAG = '{% control_paragraph %}'
@@ -49,6 +49,19 @@ OOO_PARAGRAPH_NODE = 'text:p'
 OOO_TABLEROW_NODE = 'table:table-row'
 OOO_TABLECELL_NODE = 'table:table-cell'
 
+
+# Silently undefined,
+# see http://stackoverflow.com/questions/6182498/jinja2-how-to-make-it-fail-silently-like-djangotemplate
+def silently_undefined(*args, **kwargs):
+    return u''
+
+return_new = lambda *args, **kwargs: UndefinedSilently()
+
+class UndefinedSilently(Undefined):
+    __unicode__ = silently_undefined
+    __str__ = silently_undefined
+    __call__ = return_new
+    __getattr__ = return_new
 
 # ************************************************
 # 
@@ -106,7 +119,7 @@ class BaseRender():
             to do the actual rendering.
         """
         
-        environment = Environment()
+        environment = Environment(undefined=UndefinedSilently)
         environment.filters['pad'] = pad_string
 
         template = environment.from_string(self.xml_document.toxml())
