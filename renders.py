@@ -185,56 +185,6 @@ class BaseRender():
                 parent.removeChild(field)
             
 
-    def scan_paragraph_child_nodes(self, nodes):
-        """
-
-        """
-
-        if nodes.hasChildNodes():
-            child_nodes = nodes.childNodes
-
-            for node in child_nodes:
-                if node.nodeType == node.TEXT_NODE:
-                    self.handle_special_tags(node)
-                else:
-                    if node.hasChildNodes():
-                        self.scan_paragraph_child_nodes(node)
-
-    # -----------------------------------------------------------------------
-
-
-    def handle_special_tags(self, node):
-        """
-
-        """
-        node_text = node.data.lower()
-        replace_node = None
-
-        if node_text.find(PARAGRAPH_TAG) > -1:
-            replace_node = self.get_parent_of(node, OOO_PARAGRAPH_NODE)
-            note_text = replace_node.toxml().replace(PARAGRAPH_TAG, '')
-
-        elif node_text.find(TABLEROW_TAG) > -1:
-            replace_node = self.get_parent_of(node, OOO_TABLEROW_NODE)
-            note_text = replace_node.toxml().replace(TABLEROW_TAG, '')
-
-        elif node_text.find(TABLECELL_TAG) > -1:
-            replace_node = self.get_parent_of(node, OOO_TABLECELL_NODE)
-            note_text = replace_node.toxml().replace(TABLECELL_TAG, '')
-
-
-        if replace_node is not None:
-            paragraph_parent = replace_node.parentNode
-
-            new_node_text = \
-                ' '.join(re.findall('(\{.*?\})', note_text))
-            logging.error(new_node_text)
-            new_node = self.xml_document.createTextNode(new_node_text)
-            paragraph_parent.replaceChild(new_node, replace_node)
-
-    # -----------------------------------------------------------------------
-
-
     def render(self):
         """
             render prepares the XML and the call render_with_engine
@@ -246,10 +196,6 @@ class BaseRender():
 
     # -----------------------------------------------------------------------
 
-
-
-def render_odt(template, **args):
-    pass
 
 def render_template(template, **kwargs):
     """
