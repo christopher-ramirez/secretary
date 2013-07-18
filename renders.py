@@ -38,7 +38,7 @@ import zipfile
 import StringIO
 import xml.dom.minidom
 from os.path import isfile
-from jinja2 import Template as TemplateEngine
+from jinja2 import Environment, Template as TemplateEngine
 
 
 PARAGRAPH_TAG = '{% control_paragraph %}'
@@ -48,6 +48,18 @@ TABLECELL_TAG = '{% control_tablecell %}'
 OOO_PARAGRAPH_NODE = 'text:p'
 OOO_TABLEROW_NODE = 'table:table-row'
 OOO_TABLECELL_NODE = 'table:table-cell'
+
+
+# ************************************************
+# 
+#           SECRETARY FILTERS
+# 
+# ************************************************
+
+def pad_string(value, length=5):
+    value = str(value)
+    return value.zfill(length)
+
 
 class BaseRender():
     """
@@ -94,7 +106,10 @@ class BaseRender():
             to do the actual rendering.
         """
         
-        template = TemplateEngine(self.xml_document.toxml())
+        environment = Environment()
+        environment.filters['pad'] = pad_string
+
+        template = environment.from_string(self.xml_document.toxml())
         rendered = template.render(**self.template_vars)
 
         # Replace all \n in field values with a ODT line break
