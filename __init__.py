@@ -85,7 +85,7 @@ class Render():
         filters to the ODF render.
 
             engine = Render('template.odt')
-            engine.enviroment.filters['custom_filer'] = filter_function
+            engine.environment.filters['custom_filer'] = filter_function
             result = engine.render()
         
         Basic use example:
@@ -102,9 +102,9 @@ class Render():
 
 
     @property
-    def enviroment(self):
+    def environment(self):
         return self._environment
-    @enviroment.setter
+    @environment.setter
     def enviroment(self, value):
         self._environment = value
 
