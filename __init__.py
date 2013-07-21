@@ -229,24 +229,6 @@ class Render():
             return None
 
 
-
-    def render_with_engine(self):
-        """
-            Once the XML have been prepared, this routine is called
-            to do the actual rendering.
-        """
-        
-        
-
-        template = environment.from_string(self.xml_document.toxml())
-        rendered = template.render(**self.template_vars)
-
-        # Replace all \n in field values with a ODT line break
-        rendered = rendered.replace('\n', '<text:line-break/>')
-
-        return rendered
-
-
     def create_text_span_node(self, xml_document, content):
         span = self.content.createElement('text:span')
         text_node = self.create_text_node(self.content, content)
