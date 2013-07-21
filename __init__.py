@@ -89,7 +89,6 @@ class Render():
     _unpacked_template = None
     _packed_template = None
     _content_file = None
-    _style_file = None
     _mimetype = ''
 
 
@@ -158,7 +157,6 @@ class Render():
 
         # Save rendered content and headers
         self._content_file = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
-        self._style_file = (self.styles.toxml().encode('ascii', 'xmlcharrefreplace'))
 
         self.rendered = StringIO.StringIO()
         self._packed_template = zipfile.ZipFile(self.rendered, 'a')
@@ -174,7 +172,7 @@ class Render():
                 out = self._content_file
 
             if zip_file.filename == 'styles.xml':
-                out = self._style_file
+                out = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
 
             if sys.version_info >= (2, 7):
                 self._packed_template.writestr(zip_file.filename, out, zipfile.ZIP_DEFLATED)
@@ -192,7 +190,6 @@ class Render():
         """
 
         self.unpack_template()
-        self._template_vars = kwargs
 
         # Render content.xml
         self.prepare_template_tags(self.content)
