@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 
- # * Copyright (c) 2012 Christopher Ramírez blindedbythedark [at} gmail (dot] com.
+ # * Copyright (c) 2012 Christopher Ramírez chris.ramirezg [at} gmail (dot] com.
  # * All rights reserved.
  # *  
  # * Permission is hereby granted, free of charge, to any person obtaining a
