@@ -36,7 +36,7 @@ import sys
 import logging
 import zipfile
 import StringIO
-import xml.dom.minidom
+from xml.dom.minidom import parseString
 from os.path import isfile
 from jinja2 import Environment, Undefined
 
@@ -134,19 +134,32 @@ class Render():
         
         # go through the files in source
         for zi in self._unpacked_template.filelist:
-            archive_file = self._unpacked_template.read( zi.filename )
+            file_contents = self._unpacked_template.read( zi.filename )
 
             if zi.filename == 'content.xml':
-                self._content_file = archive_file
+                self.content = parseString( file_contents )
             elif zi.filename == 'styles.xml':
-                self._style_file = archive_file
+                self.styles = parseString( file_contents )
             elif zi.filename == 'mimetype':
-                self._mimetype = archive_file
+                self._mimetype = file_contents
+
+        # Load content.xml and style.xml file
+        body = self.content.getElementsByTagName('office:body')
+        self.content_body = body and body[0]
+
+        body = self.styles.getElementsByTagName('office:master-styles')
+        self.headers = body and body[0]
+
 
     def pack_document(self):
         """
             Make an archive from _unpacked_template
         """
+
+        # Save rendered content and headers
+        self._content_file = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
+        self._style_file = (self.styles.toxml().encode('ascii', 'xmlcharrefreplace'))
+
         self.rendered = StringIO.StringIO()
         self._packed_template = zipfile.ZipFile(self.rendered, 'a')
 
@@ -180,21 +193,12 @@ class Render():
         self.unpack_template()
         self._template_vars = kwargs
 
-        # Load content.xml and style.xml file
-        self.content = xml.dom.minidom.parseString(self._content_file)
-        body = self.content.getElementsByTagName('office:body')
-        self.content_body = body and body[0]
-
-        self.styles = xml.dom.minidom.parseString(self._style_file)
-        body = self.styles.getElementsByTagName('office:master-styles')
-        self.headers = body and body[0]
-
         # Render content.xml
         self.prepare_template_tags(self.content_body)
         template = self._environment.from_string(self.content.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
-        self.content = xml.dom.minidom.parseString(result.encode('ascii', 'xmlcharrefreplace'))
+        self.content = parseString(result.encode('ascii', 'xmlcharrefreplace'))
         self.content_body = self.content.getElementsByTagName('office:body')
 
         # Render style.xml
@@ -202,13 +206,8 @@ class Render():
         template = self._environment.from_string(self.styles.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
-        self.styles = xml.dom.minidom.parseString(result.encode('ascii', 'xmlcharrefreplace'))
+        self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
         self.headers = None
-
-        # Save rendered content and headers
-        self._content_file = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
-
-        self._style_file = (self.styles.toxml().encode('ascii', 'xmlcharrefreplace'))
 
         self.pack_document()
         return self.rendered
