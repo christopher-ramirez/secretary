@@ -26,8 +26,11 @@
 Secretary
 Take the power of Jinja2 templates to OpenOffice and LibreOffice.
 
-This file implements BaseRender. BaseRender prepares a XML which describes
-ODT document content to be processed by jinja2 or Django template system.  
+This file implements Render. Render provides an interface to render
+Open Document Format (ODF) documents to be used as templates using
+the jinja2 template engine. To render a template:
+    engine = Render(template_file)
+    result = engine.render(template_var1=...)  
 """
 
 import re
@@ -76,11 +79,18 @@ def pad_string(value, length=5):
 
 class Render():
     """
-        Prapares a XML string or file to be processed by a templating system.
+        Main engine to convert and ODT document into a jinja
+        compatible template. Render provides an enviroment
+        variable which can be manipulated to provide custom
+        filters to the ODF render.
+
+            engine = Render('template.odt')
+            engine.enviroment.filters['custom_filer'] = filter_function
+            result = engine.render()
         
-        Use example:
-        render = BaseRender('content/xml', var1, var2.. varN)
-        render.render
+        Basic use example:
+            engine = Render('template')
+            result = engine.render()
     """
 
     _template = None
@@ -109,8 +119,10 @@ class Render():
     # def __init__(self, xml_doc, template_args):
     def __init__(self, template, **kwargs):
         """
-        Builds a ODFRender instance
-        TODO: document
+        Builds a Render instance and assign init the internal enviroment.
+        Params:
+            template: Either the path to the file, or a file-like object.
+                      If it is a path, the file will be open with mode read 'r'.
         """
 
         self.template = template
