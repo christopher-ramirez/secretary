@@ -126,7 +126,7 @@ class Render():
         """
 
         self.template = template
-        self._environment = Environment(undefined=UndefinedSilently)
+        self._environment = Environment(undefined=UndefinedSilently, autoescape=True)
         self._environment.filters['pad'] = pad_string 
 
     
