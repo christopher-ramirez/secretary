@@ -194,7 +194,7 @@ class Render():
         self._template_vars = kwargs
 
         # Render content.xml
-        self.prepare_template_tags(self.content_body)
+        self.prepare_template_tags(self.content)
         template = self._environment.from_string(self.content.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
@@ -229,8 +229,8 @@ class Render():
 
 
     def create_text_span_node(self, xml_document, content):
-        span = self.content.createElement('text:span')
-        text_node = self.create_text_node(self.content, content)
+        span = xml_document.createElement('text:span')
+        text_node = self.create_text_node(xml_document, content)
         span.appendChild(text_node)
 
         return span
@@ -239,7 +239,7 @@ class Render():
         """
         Creates a text node
         """
-        return self.content.createTextNode(text)
+        return xml_document.createTextNode(text)
 
 
     def prepare_template_tags(self, xml_document):
