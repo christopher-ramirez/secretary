@@ -187,7 +187,8 @@ class Render():
 
     def render(self, **kwargs):
         """
-            Unpack and render the internal template
+            Unpack and render the internal template and
+            returns the rendered ODF document.
         """
 
         self.unpack_template()
