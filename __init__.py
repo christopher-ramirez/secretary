@@ -136,12 +136,8 @@ class Render():
             CRUD operations into the ZIP archive.
         """
 
-        if os.path.exists(self.template):
-            f = open(self.template, 'r')
-            self._unpacked_template = zipfile.ZipFile(f, "r" )
-        else:
-            self._unpacked_template = zipfile.ZipFile(self._template, "r" )
-        
+        self._unpacked_template = zipfile.ZipFile(self.template, 'r')
+
         # go through the files in source
         for zi in self._unpacked_template.filelist:
             file_contents = self._unpacked_template.read( zi.filename )
@@ -218,7 +214,7 @@ class Render():
         self.headers = None
 
         self.pack_document()
-        return self.rendered
+        return self.rendered.getvalue()
 
     
     def node_parents(self, node, parent_type):
@@ -316,6 +312,6 @@ if __name__ == "__main__":
     result = render.render(countries=countries, document=document)
     
     output = open('rendered.odt', 'w')
-    output.write(result.getvalue())
+    output.write(result)
 
     print "Template rendering finished! Check rendered.odt file."
