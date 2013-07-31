@@ -34,13 +34,10 @@ the jinja2 template engine. To render a template:
 """
 
 import re
-import os
 import sys
-import logging
 import zipfile
 import StringIO
 from xml.dom.minidom import parseString
-from os.path import isfile
 from jinja2 import Environment, Undefined
 
 
@@ -290,7 +287,6 @@ def render_template(template, **kwargs):
 
 
 if __name__ == "__main__":
-    from sys import argv
     from datetime import datetime
 
     document = {
