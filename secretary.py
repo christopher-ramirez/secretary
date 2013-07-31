@@ -3,23 +3,23 @@
 
  # * Copyright (c) 2012 Christopher Ramírez chris.ramirezg [at} gmail (dot] com.
  # * All rights reserved.
- # *  
+ # *
  # * Permission is hereby granted, free of charge, to any person obtaining a
- # * copy of this software and associated documentation files (the "Software"), 
- # * to deal in the Software without restriction, including without limitation 
- # * the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- # * and/or sell copies of the Software, and to permit persons to whom the 
+ # * copy of this software and associated documentation files (the "Software"),
+ # * to deal in the Software without restriction, including without limitation
+ # * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ # * and/or sell copies of the Software, and to permit persons to whom the
  # * Software is furnished to do so, subject to the following conditions:
- # *  
+ # *
  # * The above copyright notice and this permission notice shall be included in
  # * all copies or substantial portions of the Software.
- # *  
+ # *
  # * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- # * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ # * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  # * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- # * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- # * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- # * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ # * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ # * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ # * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  # * DEALINGS IN THE SOFTWARE.
 
 """
@@ -30,17 +30,14 @@ This file implements Render. Render provides an interface to render
 Open Document Format (ODF) documents to be used as templates using
 the jinja2 template engine. To render a template:
     engine = Render(template_file)
-    result = engine.render(template_var1=...)  
+    result = engine.render(template_var1=...)
 """
 
 import re
-import os
 import sys
-import logging
 import zipfile
 import StringIO
 from xml.dom.minidom import parseString
-from os.path import isfile
 from jinja2 import Environment, Undefined
 
 
@@ -67,9 +64,9 @@ class UndefinedSilently(Undefined):
     __getattr__ = return_new
 
 # ************************************************
-# 
+#
 #           SECRETARY FILTERS
-# 
+#
 # ************************************************
 
 def pad_string(value, length=5):
@@ -77,7 +74,7 @@ def pad_string(value, length=5):
     return value.zfill(length)
 
 
-class Render():
+class Render(object):
     """
         Main engine to convert and ODT document into a jinja
         compatible template. Render provides an enviroment
@@ -87,33 +84,14 @@ class Render():
             engine = Render('template.odt')
             engine.environment.filters['custom_filer'] = filter_function
             result = engine.render()
-        
+
         Basic use example:
             engine = Render('template')
             result = engine.render()
     """
 
-    _template = None
-    _environment = None
-    _working_template = None
-    _unpacked_template = None
-    _packed_template = None
-    _mimetype = ''
 
 
-    @property
-    def environment(self):
-        return self._environment
-    @environment.setter
-    def enviroment(self, value):
-        self._environment = value
-
-    @property
-    def template(self):
-        return self._template
-    @template.setter
-    def template(self, value):
-        self._template = value
 
 
     # def __init__(self, xml_doc, template_args):
@@ -126,35 +104,29 @@ class Render():
         """
 
         self.template = template
-        self._environment = Environment(undefined=UndefinedSilently, autoescape=True)
-        self._environment.filters['pad'] = pad_string 
+        self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
+        self.environment.filters['pad'] = pad_string
+        self.file_list = {}
 
-    
+
     def unpack_template(self):
         """
             Loads the template into a ZIP file, allowing to make
             CRUD operations into the ZIP archive.
         """
 
-        self._unpacked_template = zipfile.ZipFile(self.template, 'r')
+        with zipfile.ZipFile(self.template, 'r') as unpacked_template:
+            # go through the files in source
+            for zi in unpacked_template.filelist:
+                file_contents = unpacked_template.read( zi.filename )
+                self.file_list[zi.filename] = file_contents
 
-        # go through the files in source
-        for zi in self._unpacked_template.filelist:
-            file_contents = self._unpacked_template.read( zi.filename )
+                if zi.filename == 'content.xml':
+                    self.content = parseString( file_contents )
+                elif zi.filename == 'styles.xml':
+                    self.styles = parseString( file_contents )
 
-            if zi.filename == 'content.xml':
-                self.content = parseString( file_contents )
-            elif zi.filename == 'styles.xml':
-                self.styles = parseString( file_contents )
-            elif zi.filename == 'mimetype':
-                self._mimetype = file_contents
 
-        # Load content.xml and style.xml file
-        body = self.content.getElementsByTagName('office:body')
-        self.content_body = body and body[0]
-
-        body = self.styles.getElementsByTagName('office:master-styles')
-        self.headers = body and body[0]
 
 
     def pack_document(self):
@@ -163,30 +135,21 @@ class Render():
         """
 
         # Save rendered content and headers
-
         self.rendered = StringIO.StringIO()
-        self._packed_template = zipfile.ZipFile(self.rendered, 'a')
 
-        for zip_file in self._unpacked_template.filelist:
-            out = self._unpacked_template.read( zip_file.filename )
+        with zipfile.ZipFile(self.rendered, 'a') as packed_template:
+            for filename, content in self.file_list.items():
+                if filename == 'content.xml':
+                    content = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
 
-            if zip_file.filename == 'mimetype':
-                # mimetype is stored within the ODF
-                mimetype = self._mimetype
+                if filename == 'styles.xml':
+                    content = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
 
-            if zip_file.filename == 'content.xml':
-                out = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
+                if sys.version_info >= (2, 7):
+                    packed_template.writestr(filename, content, zipfile.ZIP_DEFLATED)
+                else:
+                    packed_template.writestr(filename, content)
 
-            if zip_file.filename == 'styles.xml':
-                out = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
-
-            if sys.version_info >= (2, 7):
-                self._packed_template.writestr(zip_file.filename, out, zipfile.ZIP_DEFLATED)
-            else:
-                self._packed_template.writestr(zip_file.filename, out)
-
-        self._packed_template.close()
-        self._unpacked_template.close()
 
 
     def render(self, **kwargs):
@@ -199,24 +162,22 @@ class Render():
 
         # Render content.xml
         self.prepare_template_tags(self.content)
-        template = self._environment.from_string(self.content.toxml())
+        template = self.environment.from_string(self.content.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.content = parseString(result.encode('ascii', 'xmlcharrefreplace'))
-        self.content_body = self.content.getElementsByTagName('office:body')
 
         # Render style.xml
         self.prepare_template_tags(self.styles)
-        template = self._environment.from_string(self.styles.toxml())
+        template = self.environment.from_string(self.styles.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
-        self.headers = None
 
         self.pack_document()
         return self.rendered.getvalue()
 
-    
+
     def node_parents(self, node, parent_type):
         """
             Returns the first node's parent with name  of parent_type
@@ -278,7 +239,7 @@ class Render():
                 parent = field.parentNode
                 parent.insertBefore(new_node, field)
                 parent.removeChild(field)
-            
+
 
 def render_template(template, **kwargs):
     """
@@ -290,7 +251,6 @@ def render_template(template, **kwargs):
 
 
 if __name__ == "__main__":
-    from sys import argv
     from datetime import datetime
 
     document = {
@@ -310,7 +270,7 @@ if __name__ == "__main__":
 
     render = Render('simple_template.odt')
     result = render.render(countries=countries, document=document)
-    
+
     output = open('rendered.odt', 'w')
     output.write(result)
 
