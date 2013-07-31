@@ -74,7 +74,7 @@ def pad_string(value, length=5):
     return value.zfill(length)
 
 
-class Render():
+class Render(object):
     """
         Main engine to convert and ODT document into a jinja
         compatible template. Render provides an enviroment
@@ -98,19 +98,6 @@ class Render():
     _mimetype = ''
 
 
-    @property
-    def environment(self):
-        return self._environment
-    @environment.setter
-    def enviroment(self, value):
-        self._environment = value
-
-    @property
-    def template(self):
-        return self._template
-    @template.setter
-    def template(self, value):
-        self._template = value
 
 
     # def __init__(self, xml_doc, template_args):
@@ -123,8 +110,8 @@ class Render():
         """
 
         self.template = template
-        self._environment = Environment(undefined=UndefinedSilently, autoescape=True)
-        self._environment.filters['pad'] = pad_string
+        self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
+        self.environment.filters['pad'] = pad_string
 
 
     def unpack_template(self):
@@ -196,7 +183,7 @@ class Render():
 
         # Render content.xml
         self.prepare_template_tags(self.content)
-        template = self._environment.from_string(self.content.toxml())
+        template = self.environment.from_string(self.content.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.content = parseString(result.encode('ascii', 'xmlcharrefreplace'))
@@ -204,7 +191,7 @@ class Render():
 
         # Render style.xml
         self.prepare_template_tags(self.styles)
-        template = self._environment.from_string(self.styles.toxml())
+        template = self.environment.from_string(self.styles.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
