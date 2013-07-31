@@ -90,12 +90,6 @@ class Render(object):
             result = engine.render()
     """
 
-    _template = None
-    _environment = None
-    _working_template = None
-    _unpacked_template = None
-    _packed_template = None
-    _mimetype = ''
 
 
 
@@ -112,6 +106,7 @@ class Render(object):
         self.template = template
         self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
         self.environment.filters['pad'] = pad_string
+        self.file_list = {}
 
 
     def unpack_template(self):
@@ -120,25 +115,18 @@ class Render(object):
             CRUD operations into the ZIP archive.
         """
 
-        self._unpacked_template = zipfile.ZipFile(self.template, 'r')
+        with zipfile.ZipFile(self.template, 'r') as unpacked_template:
+            # go through the files in source
+            for zi in unpacked_template.filelist:
+                file_contents = unpacked_template.read( zi.filename )
+                self.file_list[zi.filename] = file_contents
 
-        # go through the files in source
-        for zi in self._unpacked_template.filelist:
-            file_contents = self._unpacked_template.read( zi.filename )
+                if zi.filename == 'content.xml':
+                    self.content = parseString( file_contents )
+                elif zi.filename == 'styles.xml':
+                    self.styles = parseString( file_contents )
 
-            if zi.filename == 'content.xml':
-                self.content = parseString( file_contents )
-            elif zi.filename == 'styles.xml':
-                self.styles = parseString( file_contents )
-            elif zi.filename == 'mimetype':
-                self._mimetype = file_contents
 
-        # Load content.xml and style.xml file
-        body = self.content.getElementsByTagName('office:body')
-        self.content_body = body and body[0]
-
-        body = self.styles.getElementsByTagName('office:master-styles')
-        self.headers = body and body[0]
 
 
     def pack_document(self):
@@ -147,30 +135,21 @@ class Render(object):
         """
 
         # Save rendered content and headers
-
         self.rendered = StringIO.StringIO()
-        self._packed_template = zipfile.ZipFile(self.rendered, 'a')
 
-        for zip_file in self._unpacked_template.filelist:
-            out = self._unpacked_template.read( zip_file.filename )
+        with zipfile.ZipFile(self.rendered, 'a') as packed_template:
+            for filename, content in self.file_list.items():
+                if filename == 'content.xml':
+                    content = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
 
-            if zip_file.filename == 'mimetype':
-                # mimetype is stored within the ODF
-                mimetype = self._mimetype
+                if filename == 'styles.xml':
+                    content = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
 
-            if zip_file.filename == 'content.xml':
-                out = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
+                if sys.version_info >= (2, 7):
+                    packed_template.writestr(filename, content, zipfile.ZIP_DEFLATED)
+                else:
+                    packed_template.writestr(filename, content)
 
-            if zip_file.filename == 'styles.xml':
-                out = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
-
-            if sys.version_info >= (2, 7):
-                self._packed_template.writestr(zip_file.filename, out, zipfile.ZIP_DEFLATED)
-            else:
-                self._packed_template.writestr(zip_file.filename, out)
-
-        self._packed_template.close()
-        self._unpacked_template.close()
 
 
     def render(self, **kwargs):
@@ -187,7 +166,6 @@ class Render(object):
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.content = parseString(result.encode('ascii', 'xmlcharrefreplace'))
-        self.content_body = self.content.getElementsByTagName('office:body')
 
         # Render style.xml
         self.prepare_template_tags(self.styles)
@@ -195,7 +173,6 @@ class Render(object):
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
-        self.headers = None
 
         self.pack_document()
         return self.rendered.getvalue()
