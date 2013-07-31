@@ -3,23 +3,23 @@
 
  # * Copyright (c) 2012 Christopher Ramírez chris.ramirezg [at} gmail (dot] com.
  # * All rights reserved.
- # *  
+ # *
  # * Permission is hereby granted, free of charge, to any person obtaining a
- # * copy of this software and associated documentation files (the "Software"), 
- # * to deal in the Software without restriction, including without limitation 
- # * the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- # * and/or sell copies of the Software, and to permit persons to whom the 
+ # * copy of this software and associated documentation files (the "Software"),
+ # * to deal in the Software without restriction, including without limitation
+ # * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ # * and/or sell copies of the Software, and to permit persons to whom the
  # * Software is furnished to do so, subject to the following conditions:
- # *  
+ # *
  # * The above copyright notice and this permission notice shall be included in
  # * all copies or substantial portions of the Software.
- # *  
+ # *
  # * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- # * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ # * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  # * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- # * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- # * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- # * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ # * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ # * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ # * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  # * DEALINGS IN THE SOFTWARE.
 
 """
@@ -30,7 +30,7 @@ This file implements Render. Render provides an interface to render
 Open Document Format (ODF) documents to be used as templates using
 the jinja2 template engine. To render a template:
     engine = Render(template_file)
-    result = engine.render(template_var1=...)  
+    result = engine.render(template_var1=...)
 """
 
 import re
@@ -67,9 +67,9 @@ class UndefinedSilently(Undefined):
     __getattr__ = return_new
 
 # ************************************************
-# 
+#
 #           SECRETARY FILTERS
-# 
+#
 # ************************************************
 
 def pad_string(value, length=5):
@@ -87,7 +87,7 @@ class Render():
             engine = Render('template.odt')
             engine.environment.filters['custom_filer'] = filter_function
             result = engine.render()
-        
+
         Basic use example:
             engine = Render('template')
             result = engine.render()
@@ -127,9 +127,9 @@ class Render():
 
         self.template = template
         self._environment = Environment(undefined=UndefinedSilently, autoescape=True)
-        self._environment.filters['pad'] = pad_string 
+        self._environment.filters['pad'] = pad_string
 
-    
+
     def unpack_template(self):
         """
             Loads the template into a ZIP file, allowing to make
@@ -216,7 +216,7 @@ class Render():
         self.pack_document()
         return self.rendered.getvalue()
 
-    
+
     def node_parents(self, node, parent_type):
         """
             Returns the first node's parent with name  of parent_type
@@ -278,7 +278,7 @@ class Render():
                 parent = field.parentNode
                 parent.insertBefore(new_node, field)
                 parent.removeChild(field)
-            
+
 
 def render_template(template, **kwargs):
     """
@@ -310,7 +310,7 @@ if __name__ == "__main__":
 
     render = Render('simple_template.odt')
     result = render.render(countries=countries, document=document)
-    
+
     output = open('rendered.odt', 'w')
     output.write(result)
 
