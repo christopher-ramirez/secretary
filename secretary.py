@@ -82,10 +82,6 @@ class Render(object):
     """
 
 
-
-
-
-    # def __init__(self, xml_doc, template_args):
     def __init__(self, template, **kwargs):
         """
         Builds a Render instance and assign init the internal enviroment.
