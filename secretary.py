@@ -41,15 +41,6 @@ from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
 
-PARAGRAPH_TAG = '{% control_paragraph %}'
-TABLEROW_TAG = '{% control_tablerow %}'
-TABLECELL_TAG = '{% control_tablecell %}'
-
-ODF_PARAGRAPH_NODE = 'text:p'
-ODF_TABLEROW_NODE = 'table:table-row'
-ODF_TABLECELL_NODE = 'table:table-cell'
-
-
 class UndefinedSilently(Undefined):
     # Silently undefined,
     # see http://stackoverflow.com/questions/6182498/jinja2-how-to-make-it-fail-silently-like-djangotemplate
