@@ -68,16 +68,18 @@ def pad_string(value, length=5):
 class Render(object):
     """
         Main engine to convert and ODT document into a jinja
-        compatible template. Render provides an enviroment
-        variable which can be manipulated to provide custom
-        filters to the ODF render.
-
-            engine = Render('template.odt')
-            engine.environment.filters['custom_filer'] = filter_function
-            result = engine.render()
+        compatible template.
 
         Basic use example:
             engine = Render('template')
+            result = engine.render()
+
+
+        Render provides an enviroment variable which can be used
+        to provide custom filters to the ODF render.
+
+            engine = Render('template.odt')
+            engine.environment.filters['custom_filer'] = filter_function
             result = engine.render()
     """
 
