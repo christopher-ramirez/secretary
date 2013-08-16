@@ -9,6 +9,10 @@ Secretary use [the semantics of jinja2 templates][1] to render ODT files. Most f
 
 Rendered documents are produced in ODT format, and can then be converted to PDF, MS Word or other supported formats using the UNO Bridge or a library like [PyODConverter][2]
 
+## Installing
+
+    pip install secretary
+
 ## Rendering a Template
 
     from secreatary import Render
