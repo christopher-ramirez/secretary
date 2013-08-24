@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import os
 from xml.dom.minidom import getDOMImplementation
 from unittest import TestCase
@@ -9,7 +11,6 @@ def test_undefined_silently():
 
     assert isinstance(undefined(), UndefinedSilently)
     assert isinstance(undefined.attribute, UndefinedSilently)
-    assert unicode(undefined) == u''
     assert str(undefined) == ''
 
 def test_pad_string():
