@@ -32,11 +32,12 @@ the jinja2 template engine. To render a template:
     engine = Render(template_file)
     result = engine.render(template_var1=...)
 """
+from __future__ import unicode_literals, print_function
 
 import re
 import sys
 import zipfile
-import StringIO
+import io
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
@@ -45,7 +46,7 @@ class UndefinedSilently(Undefined):
     # Silently undefined,
     # see http://stackoverflow.com/questions/6182498/jinja2-how-to-make-it-fail-silently-like-djangotemplate
     def silently_undefined(*args, **kwargs):
-        return u''
+        return ''
 
     return_new = lambda *args, **kwargs: UndefinedSilently()
 
@@ -118,13 +119,14 @@ class Render(object):
 
 
 
+
     def pack_document(self):
         """
             Make an archive from _unpacked_template
         """
 
         # Save rendered content and headers
-        self.rendered = StringIO.StringIO()
+        self.rendered = io.BytesIO()
 
         with zipfile.ZipFile(self.rendered, 'a') as packed_template:
             for filename, content in self.file_list.items():
@@ -138,6 +140,7 @@ class Render(object):
                     packed_template.writestr(filename, content, zipfile.ZIP_DEFLATED)
                 else:
                     packed_template.writestr(filename, content)
+
 
 
 
@@ -230,6 +233,7 @@ class Render(object):
                 parent.removeChild(field)
 
 
+
 def render_template(template, **kwargs):
     """
         Render a ODF template file
@@ -250,7 +254,7 @@ if __name__ == "__main__":
         {'country': 'United States', 'capital': 'Washington', 'cities': ['miami', 'new york', 'california', 'texas', 'atlanta']},
         {'country': 'England', 'capital': 'London', 'cities': ['gales']},
         {'country': 'Japan', 'capital': 'Tokio', 'cities': ['hiroshima', 'nagazaki']},
-        {'country': 'Nicaragua', 'capital': 'Managua', 'cities': [u'león', 'granada', 'masaya']},
+        {'country': 'Nicaragua', 'capital': 'Managua', 'cities': ['león', 'granada', 'masaya']},
         {'country': 'Argentina', 'capital': 'Buenos aires'},
         {'country': 'Chile', 'capital': 'Santiago'},
         {'country': 'Mexico', 'capital': 'MExico City', 'cities': ['puebla', 'cancun']},
@@ -263,4 +267,4 @@ if __name__ == "__main__":
     output = open('rendered.odt', 'w')
     output.write(result)
 
-    print "Template rendering finished! Check rendered.odt file."
+    print("Template rendering finished! Check rendered.odt file.")
