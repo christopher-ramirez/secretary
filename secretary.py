@@ -42,6 +42,10 @@ from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
 
+# ---- Exceptions
+class SecretaryError(Exception):
+    pass
+
 class UndefinedSilently(Undefined):
     # Silently undefined,
     # see http://stackoverflow.com/questions/6182498/jinja2-how-to-make-it-fail-silently-like-djangotemplate
@@ -231,6 +235,68 @@ class Render(object):
                 parent = field.parentNode
                 parent.insertBefore(new_node, field)
                 parent.removeChild(field)
+
+
+def transfer_childs(from_node, to_node):
+    if from_node.hasChildNodes():
+        for child_node in from_node.childNodes:
+
+            new_child = to_node.appendChild(child_node)    
+
+            if child_node.hasChildNodes():
+                transfer_childs(child_node, new_child)
+
+    # return to_node
+    
+
+def markdown_filter(markdown_text):
+    """
+        Convert a markdown text into a ODT formated text
+    """
+
+    try:
+        from copy import deepcopy
+        from markdown2 import markdown
+    except ImportError:
+        raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
+
+    html_text = markdown(markdown_text)
+
+    # Conver HTML tags to ODT tags
+    replacement_map = {
+        'p': { 
+            'replace_with': 'text:p',
+            'attributes': {} 
+        },
+
+        'strong': {
+            'replace_with': 'text:span',
+            'attributes': {}
+        }
+    }
+
+    xml_object = parseString( html_text )
+
+    # Replace HTML tags as specified in replacement_map
+    # Some tags may require extra attributes in ODT.
+    # Additional attributes are indicated in the 'attributes' property
+
+    for tag in replacement_map:
+        html_nodes = xml_object.getElementsByTagName(tag)
+        for html_node in html_nodes:
+            odt_node = xml_object.createElement(replacement_map[tag]['replace_with'])
+
+            # Transfer child nodes
+            if html_node.hasChildNodes():
+
+                for child_node in html_node.childNodes:
+                    odt_node.appendChild(deepcopy(child_node))
+
+
+            html_node.parentNode.replaceChild(odt_node, html_node)
+
+    return xml_object.toxml()
+
 
 
 
