@@ -254,8 +254,10 @@ def markdown_filter(markdown_text):
         Convert a markdown text into a ODT formated text
     """
 
+    from copy import deepcopy, copy
+    from xml.dom import Node
+
     try:
-        from copy import deepcopy
         from markdown2 import markdown
     except ImportError:
         raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
@@ -270,6 +272,11 @@ def markdown_filter(markdown_text):
         },
 
         'strong': {
+            'replace_with': 'text:span',
+            'attributes': {}
+        },
+
+        'i': {
             'replace_with': 'text:span',
             'attributes': {}
         }
@@ -288,16 +295,16 @@ def markdown_filter(markdown_text):
 
             # Transfer child nodes
             if html_node.hasChildNodes():
-
                 for child_node in html_node.childNodes:
-                    odt_node.appendChild(deepcopy(child_node))
-
+                    
+                    if child_node.nodeType == Node.ELEMENT_NODE:
+                        odt_node.appendChild(child_node.cloneNode(True))
+                    else:
+                        odt_node.appendChild(deepcopy(child_node))
 
             html_node.parentNode.replaceChild(odt_node, html_node)
 
-    return xml_object.toxml()
-
-
+    return xml_object.firstChild.toxml()
 
 
 def render_template(template, **kwargs):
