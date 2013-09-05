@@ -237,18 +237,6 @@ class Render(object):
                 parent.removeChild(field)
 
 
-def transfer_childs(from_node, to_node):
-    if from_node.hasChildNodes():
-        for child_node in from_node.childNodes:
-
-            new_child = to_node.appendChild(child_node)    
-
-            if child_node.hasChildNodes():
-                transfer_childs(child_node, new_child)
-
-    # return to_node
-    
-
 def markdown_filter(markdown_text):
     """
         Convert a markdown text into a ODT formated text
