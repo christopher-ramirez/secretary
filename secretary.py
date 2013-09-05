@@ -242,7 +242,7 @@ def markdown_filter(markdown_text):
         Convert a markdown text into a ODT formated text
     """
 
-    from copy import deepcopy, copy
+    from copy import deepcopy
     from xml.dom import Node
 
     try:
@@ -285,6 +285,10 @@ def markdown_filter(markdown_text):
             if html_node.hasChildNodes():
                 for child_node in html_node.childNodes:
                     
+                    # We use different methods to clone the childs
+                    # because 'deepcopy' duplicates TEXT_NODE nodes
+                    # inside a ELEMENT_NODE Node, and because 
+                    # 'cloneNode' does not work with TEXT_NODE nodes.
                     if child_node.nodeType == Node.ELEMENT_NODE:
                         odt_node.appendChild(child_node.cloneNode(True))
                     else:
