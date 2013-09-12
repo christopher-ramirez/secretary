@@ -237,6 +237,51 @@ class Render(object):
                 parent.removeChild(field)
 
 
+        def get_style_by_name(self, style_name):
+            """
+                Search in <office:automatic-styles> for style_name.
+                Return None if style_name is not found. Otherwise
+                return the style node
+            """
+
+            auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
+            
+            if not auto_styles.hasChildNodes():
+                return None
+            
+            for style_node in auto_styles.childNodes:
+                if style_node.hasattr('style:name') and
+                   (style_node.getAttribute('style:name') == style_name):
+                   return style_node
+
+
+       def insert_style_in_content(self, style_name, attributes=None,
+            **style_properties):
+            """
+                Insert a new style into content.xml's <office:automatic-styles> node.
+                Returns a reference to the newly created node
+            """
+
+            auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
+            style_node = self.content.createElement(transform_map[tag]['style:style'])
+            style_node.setAttribute('style:name', style_name)
+            
+            if attributes:
+                for k, v in attributes.iteritems():
+                    style_node.setAttribute('style:%s' % k, v)
+
+            if style_properties:
+                style_prop = self.content.createElement('style:text-properties')
+                for k, v in style_properties.iteritems():
+                    style_prop.setAttribute('style:%s' % k, v)
+
+                style_node.appendChild(style_prop)
+
+            auto_styles.appendChild(style_node)
+
+            return style_node
+
+
 def markdown_filter(markdown_text):
     """
         Convert a markdown text into a ODT formated text
