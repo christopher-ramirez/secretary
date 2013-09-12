@@ -38,9 +38,9 @@ import re
 import sys
 import zipfile
 import io
+from copy import deepcopy
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
-
 
 # ---- Exceptions
 class SecretaryError(Exception):
@@ -99,9 +99,12 @@ class Render(object):
 
         self.template = template
         self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
-        self.environment.filters['pad'] = pad_string
-        self.file_list = {}
 
+        # Register provided filters
+        self.environment.filters['pad'] = pad_string
+        self.environment.filters['markdown'] = self.markdown_filter
+
+        self.file_list = {}
 
     def unpack_template(self):
         """
@@ -161,7 +164,14 @@ class Render(object):
         template = self.environment.from_string(self.content.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
-        self.content = parseString(result.encode('ascii', 'xmlcharrefreplace'))
+
+        # Replace original body with rendered body
+        original_body = self.content.getElementsByTagName('office:body')[0]
+        rendered_body = parseString(result.encode('ascii', 'xmlcharrefreplace')) \
+            .getElementsByTagName('office:body')[0]
+
+        document = self.content.getElementsByTagName('office:document-content')[0]
+        document.replaceChild(rendered_body, original_body)
 
         # Render style.xml
         self.prepare_template_tags(self.styles)
@@ -222,6 +232,10 @@ class Render(object):
                     continue
 
                 field_description = field.getAttribute('text:description')
+                
+                if re.findall(r'\|markdown', field_content):
+                    # a markdown should take the whole paragraph
+                    field_description = 'text:p'
 
                 if not field_description:
                     new_node = self.create_text_span_node(xml_document, field_content)
@@ -237,104 +251,112 @@ class Render(object):
                 parent.removeChild(field)
 
 
-        def get_style_by_name(self, style_name):
-            """
-                Search in <office:automatic-styles> for style_name.
-                Return None if style_name is not found. Otherwise
-                return the style node
-            """
+    def get_style_by_name(self, style_name):
+        """
+            Search in <office:automatic-styles> for style_name.
+            Return None if style_name is not found. Otherwise
+            return the style node
+        """
 
-            auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
-            
-            if not auto_styles.hasChildNodes():
-                return None
-            
-            for style_node in auto_styles.childNodes:
-                if style_node.hasattr('style:name') and
-                   (style_node.getAttribute('style:name') == style_name):
-                   return style_node
+        auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
+        
+        if not auto_styles.hasChildNodes():
+            return None
+        
+        for style_node in auto_styles.childNodes:
+            if style_node.hasAttribute('style:name') and \
+               (style_node.getAttribute('style:name') == style_name):
+               return style_node
 
+        return None
 
-       def insert_style_in_content(self, style_name, attributes=None,
-            **style_properties):
-            """
-                Insert a new style into content.xml's <office:automatic-styles> node.
-                Returns a reference to the newly created node
-            """
+    def insert_style_in_content(self, style_name, attributes=None,
+        **style_properties):
+        """
+            Insert a new style into content.xml's <office:automatic-styles> node.
+            Returns a reference to the newly created node
+        """
 
-            auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
-            style_node = self.content.createElement(transform_map[tag]['style:style'])
-            style_node.setAttribute('style:name', style_name)
-            
-            if attributes:
-                for k, v in attributes.iteritems():
-                    style_node.setAttribute('style:%s' % k, v)
+        auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
+        style_node = self.content.createElement('style:style')
 
-            if style_properties:
-                style_prop = self.content.createElement('style:text-properties')
-                for k, v in style_properties.iteritems():
-                    style_prop.setAttribute('style:%s' % k, v)
+        style_node.setAttribute('style:name', style_name)
+        style_node.setAttribute('style:family', 'text')
+        style_node.setAttribute('style:parent-style-name', 'Standard')
+        
+        if attributes:
+            for k, v in attributes.iteritems():
+                style_node.setAttribute('style:%s' % k, v)
 
-                style_node.appendChild(style_prop)
+        if style_properties:
+            style_prop = self.content.createElement('style:text-properties')
+            for k, v in style_properties.iteritems():
+                style_prop.setAttribute('%s' % k, v)
 
-            auto_styles.appendChild(style_node)
+            style_node.appendChild(style_prop)
 
-            return style_node
+        return auto_styles.appendChild(style_node)
 
+    def markdown_filter(self, markdown_text):
+        """
+            Convert a markdown text into a ODT formated text
+        """
 
-def markdown_filter(markdown_text):
-    """
-        Convert a markdown text into a ODT formated text
-    """
+        from xml.dom import Node
+        from markdown_map import transform_map
 
-    from copy import deepcopy
-    from xml.dom import Node
-    from markdown_map import transform_map
+        try:
+            from markdown2 import markdown
+        except ImportError:
+            raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
-    try:
-        from markdown2 import markdown
-    except ImportError:
-        raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
+        styles_cache = {}   # cache styles searching     
+        html_text = markdown(markdown_text)
+        xml_object = parseString( html_text )
 
-    html_text = markdown(markdown_text)
+        # Transform HTML tags as specified in transform_map
+        # Some tags may require extra attributes in ODT.
+        # Additional attributes are indicated in the 'attributes' property
 
-    
-    xml_object = parseString( html_text )
+        for tag in transform_map:
+            html_nodes = xml_object.getElementsByTagName(tag)
+            for html_node in html_nodes:
+                odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
 
-    # Transform HTML tags as specified in transform_map
-    # Some tags may require extra attributes in ODT.
-    # Additional attributes are indicated in the 'attributes' property
+                # Transfer child nodes
+                if html_node.hasChildNodes():
+                    for child_node in html_node.childNodes:
+                        
+                        # We use different methods to clone the childs
+                        # because 'deepcopy' duplicates TEXT_NODE nodes
+                        # inside a ELEMENT_NODE Node, and because 
+                        # 'cloneNode' does not work with TEXT_NODE nodes.
+                        if child_node.nodeType == Node.ELEMENT_NODE:
+                            odt_node.appendChild(child_node.cloneNode(True))
+                        else:
+                            odt_node.appendChild(deepcopy(child_node))
 
-    for tag in transform_map:
-        html_nodes = xml_object.getElementsByTagName(tag)
-        for html_node in html_nodes:
-            odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
+                # Add attributes defined in transform_map
+                if 'attributes' in transform_map[tag]:
+                    for k, v in transform_map[tag]['attributes'].iteritems():
+                        odt_node.setAttribute('text:%s' % k, v)
 
-            # Transfer child nodes
-            if html_node.hasChildNodes():
-                for child_node in html_node.childNodes:
-                    
-                    # We use different methods to clone the childs
-                    # because 'deepcopy' duplicates TEXT_NODE nodes
-                    # inside a ELEMENT_NODE Node, and because 
-                    # 'cloneNode' does not work with TEXT_NODE nodes.
-                    if child_node.nodeType == Node.ELEMENT_NODE:
-                        odt_node.appendChild(child_node.cloneNode(True))
-                    else:
-                        odt_node.appendChild(deepcopy(child_node))
+                # Does the node need to create an style?
+                if 'style' in transform_map[tag]:
+                    name = transform_map[tag]['style']['name']
+                    if not name in styles_cache:
+                        style_node = self.get_style_by_name(name)
 
-            # Add attributes defined in transform_map
-            if 'attributes' in transform_map[tag]:
-                for k, v in transform_map[tag]['attributes'].iteritems():
-                    odt_node.setAttribute('text:%s' % k, v)
+                        if style_node is None:
+                            # Create and cache the style node
+                            style_node = self.insert_style_in_content(
+                                name, transform_map[tag]['style'].get('attributes', None),
+                                **transform_map[tag]['style']['properties'])
+                            styles_cache[name] = style_node
 
-            # Does the node need to create an style?
-            if 'append_style' in transform_map[tag]:
-                pass
+                html_node.parentNode.replaceChild(odt_node, html_node)
 
-            html_node.parentNode.replaceChild(odt_node, html_node)
-
-    return xml_object.firstChild.toxml()
+        return xml_object.firstChild.toxml()
 
 
 def render_template(template, **kwargs):

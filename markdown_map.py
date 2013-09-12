@@ -6,11 +6,20 @@
 # as a dict in the 'attributes' key. Also, some tags may need to create
 # new styles in the document.
 
-transform_map = {
-    'p': { 
-        'replace_with': 'text:p',
+common_styles = {
+	'italic': {
+        'replace_with': 'text:span',
         'attributes': {
-            'style-name': 'Standard'
+            'style-name': 'markdown_italic'
+        },
+
+        'style': {
+            'name': 'markdown_italic',
+            'properties': {
+                'fo:font-style': 'italic',
+                'style:font-style-asian': 'italic',
+                'style:font-style-complex': 'italic'
+            }
         }
     },
 
@@ -30,21 +39,20 @@ transform_map = {
         }
     },
 
-    'i': {
-        'replace_with': 'text:span',
+    'p': { 
+        'replace_with': 'text:p',
         'attributes': {
-            'style-name': 'markdown_italic'
-        },
-
-        'style': {
-            'name': 'markdown_italic',
-            'properties': {
-                'fo:font-style': 'italic',
-                'style:font-style-asian': 'italic',
-                'style:font-style-complex': 'italic'
-            }
+            'style-name': 'Standard'
         }
-    },
+    }
+}
+
+transform_map = {
+    'p': common_styles['p'],
+    'strong': common_styles['strong'],
+    'em': common_styles['italic'],
+    'b': common_styles['strong'],
+    'i': common_styles['italic'],
 
     # Heading Styles (Use styles defined in the document)
     'h1': {
