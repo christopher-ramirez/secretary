@@ -20,7 +20,7 @@ transform_map = {
             'style-name': 'markdown_bold'
         },
 
-        'append_style': {
+        'style': {
             'name': 'markdown_bold',
             'properties': {
                 'fo:font-weight': 'bold',
@@ -36,7 +36,7 @@ transform_map = {
             'style-name': 'markdown_italic'
         },
 
-        'append_style': {
+        'style': {
             'name': 'markdown_italic',
             'properties': {
                 'fo:font-style': 'italic',
