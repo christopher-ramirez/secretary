@@ -256,17 +256,41 @@ def markdown_filter(markdown_text):
     replacement_map = {
         'p': { 
             'replace_with': 'text:p',
-            'attributes': {} 
+            'attributes': {
+                'style-name': 'Standard'
+            }
         },
 
         'strong': {
             'replace_with': 'text:span',
-            'attributes': {}
+            'attributes': {
+                'style-name': 'markdown_bold'
+            },
+
+            'style': {
+                'create': 'markdown_bold',
+                'properties': {
+                    'fo:font-weight': 'bold',
+                    'style:font-weight-asian': 'bold',
+                    'style:font-weight-complex': 'bold'
+                }
+            }
         },
 
         'i': {
             'replace_with': 'text:span',
-            'attributes': {}
+            'attributes': {
+                'style-name': 'markdown_italic'
+            },
+
+            'style': {
+                'create': 'markdown_italic',
+                'properties': {
+                    'fo:font-style': 'italic',
+                    'style:font-style-asian': 'italic',
+                    'style:font-style-complex': 'italic'
+                }
+            }
         }
     }
 
@@ -293,6 +317,11 @@ def markdown_filter(markdown_text):
                         odt_node.appendChild(child_node.cloneNode(True))
                     else:
                         odt_node.appendChild(deepcopy(child_node))
+
+            # Agregar los atributos definidos en el mapa
+            if 'attributes' in replacement_map[tag]:
+                for k, v in replacement_map[tag]['attributes'].iteritems():
+                    odt_node.setAttribute('text:%s' % k, v)
 
             html_node.parentNode.replaceChild(odt_node, html_node)
 
