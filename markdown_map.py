@@ -83,4 +83,17 @@ transform_map = {
         }
     },
     
+    'pre': {
+        'replace_with': 'text:p',
+        'attributes': {
+            'style-name': 'Preformatted_20_Text'
+        }
+    },
+
+    'code': {
+        'replace_with': 'text:span',
+        'attributes': {
+            'style-name': 'Preformatted_20_Text'
+        }
+    },
 }
