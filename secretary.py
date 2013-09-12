@@ -301,7 +301,6 @@ class Render(object):
         """
             Convert a markdown text into a ODT formated text
         """
-
         from xml.dom import Node
         from markdown_map import transform_map
 
@@ -312,7 +311,7 @@ class Render(object):
 
         styles_cache = {}   # cache styles searching     
         html_text = markdown(markdown_text)
-        xml_object = parseString( html_text )
+        xml_object = parseString('<html>%s</html>' % html_text)
 
         # Transform HTML tags as specified in transform_map
         # Some tags may require extra attributes in ODT.
@@ -326,15 +325,7 @@ class Render(object):
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:
-                        
-                        # We use different methods to clone the childs
-                        # because 'deepcopy' duplicates TEXT_NODE nodes
-                        # inside a ELEMENT_NODE Node, and because 
-                        # 'cloneNode' does not work with TEXT_NODE nodes.
-                        if child_node.nodeType == Node.ELEMENT_NODE:
-                            odt_node.appendChild(child_node.cloneNode(True))
-                        else:
-                            odt_node.appendChild(deepcopy(child_node))
+                        odt_node.appendChild(child_node.cloneNode(True))
 
                 # Add attributes defined in transform_map
                 if 'attributes' in transform_map[tag]:
@@ -356,7 +347,11 @@ class Render(object):
 
                 html_node.parentNode.replaceChild(odt_node, html_node)
 
-        return xml_object.firstChild.toxml()
+
+        result = ''.join(c.toxml() for c in xml_object.getElementsByTagName('html')[0].childNodes)
+        # A double linebreak should be replacece with an empty paragraph
+        result = result.replace('\n\n', '<text:p text:style-name="Standard"/>')
+        return result
 
 
 def render_template(template, **kwargs):
@@ -369,10 +364,15 @@ def render_template(template, **kwargs):
 
 
 if __name__ == "__main__":
+    import os
     from datetime import datetime
 
+    def read(fname):
+        return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
     document = {
-        'datetime': datetime.now()
+        'datetime': datetime.now(),
+        'md_sample': read('README.md')
     }
 
     countries = [
