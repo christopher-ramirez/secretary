@@ -267,8 +267,8 @@ def markdown_filter(markdown_text):
                 'style-name': 'markdown_bold'
             },
 
-            'style': {
-                'create': 'markdown_bold',
+            'append_style': {
+                'name': 'markdown_bold',
                 'properties': {
                     'fo:font-weight': 'bold',
                     'style:font-weight-asian': 'bold',
@@ -283,15 +283,45 @@ def markdown_filter(markdown_text):
                 'style-name': 'markdown_italic'
             },
 
-            'style': {
-                'create': 'markdown_italic',
+            'append_style': {
+                'name': 'markdown_italic',
                 'properties': {
                     'fo:font-style': 'italic',
                     'style:font-style-asian': 'italic',
                     'style:font-style-complex': 'italic'
                 }
             }
-        }
+        },
+
+        # Heading Styles (Use styles defined in the document)
+        'h1': {
+            'replace_with': 'text:p',
+            'attributes': {
+                'style-name': 'Heading_20_1'
+            }
+        },
+
+        'h2': {
+            'replace_with': 'text:p',
+            'attributes': {
+                'style-name': 'Heading_20_2'
+            }
+        },
+
+        'h3': {
+            'replace_with': 'text:p',
+            'attributes': {
+                'style-name': 'Heading_20_3'
+            }
+        },
+
+        'h4': {
+            'replace_with': 'text:p',
+            'attributes': {
+                'style-name': 'Heading_20_4'
+            }
+        },
+        
     }
 
     xml_object = parseString( html_text )
@@ -318,10 +348,14 @@ def markdown_filter(markdown_text):
                     else:
                         odt_node.appendChild(deepcopy(child_node))
 
-            # Agregar los atributos definidos en el mapa
+            # Add attributes defined in replacement_map
             if 'attributes' in replacement_map[tag]:
                 for k, v in replacement_map[tag]['attributes'].iteritems():
                     odt_node.setAttribute('text:%s' % k, v)
+
+            # Does the node need to create an style?
+            if 'append_style' in replacement_map[tag]:
+                pass
 
             html_node.parentNode.replaceChild(odt_node, html_node)
 
