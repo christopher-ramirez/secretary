@@ -244,6 +244,7 @@ def markdown_filter(markdown_text):
 
     from copy import deepcopy
     from xml.dom import Node
+    from markdown_map import transform_map
 
     try:
         from markdown2 import markdown
@@ -252,88 +253,17 @@ def markdown_filter(markdown_text):
 
     html_text = markdown(markdown_text)
 
-    # Conver HTML tags to ODT tags
-    replacement_map = {
-        'p': { 
-            'replace_with': 'text:p',
-            'attributes': {
-                'style-name': 'Standard'
-            }
-        },
-
-        'strong': {
-            'replace_with': 'text:span',
-            'attributes': {
-                'style-name': 'markdown_bold'
-            },
-
-            'append_style': {
-                'name': 'markdown_bold',
-                'properties': {
-                    'fo:font-weight': 'bold',
-                    'style:font-weight-asian': 'bold',
-                    'style:font-weight-complex': 'bold'
-                }
-            }
-        },
-
-        'i': {
-            'replace_with': 'text:span',
-            'attributes': {
-                'style-name': 'markdown_italic'
-            },
-
-            'append_style': {
-                'name': 'markdown_italic',
-                'properties': {
-                    'fo:font-style': 'italic',
-                    'style:font-style-asian': 'italic',
-                    'style:font-style-complex': 'italic'
-                }
-            }
-        },
-
-        # Heading Styles (Use styles defined in the document)
-        'h1': {
-            'replace_with': 'text:p',
-            'attributes': {
-                'style-name': 'Heading_20_1'
-            }
-        },
-
-        'h2': {
-            'replace_with': 'text:p',
-            'attributes': {
-                'style-name': 'Heading_20_2'
-            }
-        },
-
-        'h3': {
-            'replace_with': 'text:p',
-            'attributes': {
-                'style-name': 'Heading_20_3'
-            }
-        },
-
-        'h4': {
-            'replace_with': 'text:p',
-            'attributes': {
-                'style-name': 'Heading_20_4'
-            }
-        },
-        
-    }
-
+    
     xml_object = parseString( html_text )
 
-    # Replace HTML tags as specified in replacement_map
+    # Transform HTML tags as specified in transform_map
     # Some tags may require extra attributes in ODT.
     # Additional attributes are indicated in the 'attributes' property
 
-    for tag in replacement_map:
+    for tag in transform_map:
         html_nodes = xml_object.getElementsByTagName(tag)
         for html_node in html_nodes:
-            odt_node = xml_object.createElement(replacement_map[tag]['replace_with'])
+            odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
 
             # Transfer child nodes
             if html_node.hasChildNodes():
@@ -348,13 +278,13 @@ def markdown_filter(markdown_text):
                     else:
                         odt_node.appendChild(deepcopy(child_node))
 
-            # Add attributes defined in replacement_map
-            if 'attributes' in replacement_map[tag]:
-                for k, v in replacement_map[tag]['attributes'].iteritems():
+            # Add attributes defined in transform_map
+            if 'attributes' in transform_map[tag]:
+                for k, v in transform_map[tag]['attributes'].iteritems():
                     odt_node.setAttribute('text:%s' % k, v)
 
             # Does the node need to create an style?
-            if 'append_style' in replacement_map[tag]:
+            if 'append_style' in transform_map[tag]:
                 pass
 
             html_node.parentNode.replaceChild(odt_node, html_node)
