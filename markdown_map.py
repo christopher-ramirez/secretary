@@ -50,6 +50,10 @@ common_styles = {
 transform_map = {
 	'a': {
 		'replace_with': 'text:a',
+		'attributes': {
+			'xlink:type': 'simple',
+			'xlink:href': ''
+		}
 	},
 
     'p': common_styles['p'],
