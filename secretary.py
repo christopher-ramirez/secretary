@@ -327,9 +327,9 @@ class Render(object):
                     for child_node in html_node.childNodes:
                         odt_node.appendChild(child_node.cloneNode(True))
 
-                # Add attributes defined in transform_map
-                if 'attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['attributes'].iteritems():
+                # Add style attributes defined in transform_map
+                if 'style_attributes' in transform_map[tag]:
+                    for k, v in transform_map[tag]['style_attributes'].iteritems():
                         odt_node.setAttribute('text:%s' % k, v)
 
                 # Does the node need to create an style?

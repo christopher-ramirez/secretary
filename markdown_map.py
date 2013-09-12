@@ -3,13 +3,13 @@
 # Transform map used by the markdown filter. transform_map have
 # instructions of how to transform a HTML style tag into a ODT document
 # styled tag. Some ODT tags may need extra attributes; these are defined
-# as a dict in the 'attributes' key. Also, some tags may need to create
+# as a dict in the 'style_attributes' key. Also, some tags may need to create
 # new styles in the document.
 
 common_styles = {
 	'italic': {
         'replace_with': 'text:span',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'markdown_italic'
         },
 
@@ -25,7 +25,7 @@ common_styles = {
 
     'strong': {
         'replace_with': 'text:span',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'markdown_bold'
         },
 
@@ -41,13 +41,17 @@ common_styles = {
 
     'p': { 
         'replace_with': 'text:p',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Standard'
         }
     }
 }
 
 transform_map = {
+	'a': {
+		'replace_with': 'text:a',
+	},
+
     'p': common_styles['p'],
     'strong': common_styles['strong'],
     'em': common_styles['italic'],
@@ -57,42 +61,42 @@ transform_map = {
     # Heading Styles (Use styles defined in the document)
     'h1': {
         'replace_with': 'text:p',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Heading_20_1'
         }
     },
 
     'h2': {
         'replace_with': 'text:p',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Heading_20_2'
         }
     },
 
     'h3': {
         'replace_with': 'text:p',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Heading_20_3'
         }
     },
 
     'h4': {
         'replace_with': 'text:p',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Heading_20_4'
         }
     },
-    
+
     'pre': {
         'replace_with': 'text:p',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Preformatted_20_Text'
         }
     },
 
     'code': {
         'replace_with': 'text:span',
-        'attributes': {
+        'style_attributes': {
             'style-name': 'Preformatted_20_Text'
         }
     },
