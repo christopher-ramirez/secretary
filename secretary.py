@@ -327,10 +327,21 @@ class Render(object):
                     for child_node in html_node.childNodes:
                         odt_node.appendChild(child_node.cloneNode(True))
 
-                # Add style attributes defined in transform_map
+                # Add style-attributes defined in transform_map
                 if 'style_attributes' in transform_map[tag]:
                     for k, v in transform_map[tag]['style_attributes'].iteritems():
                         odt_node.setAttribute('text:%s' % k, v)
+
+                # Add defined attributes
+                if 'attributes' in transform_map[tag]:
+                    for k, v in transform_map[tag]['attributes'].iteritems():
+                        odt_node.setAttribute(k, v)
+
+                    # copy original href attribute in <a> tag
+                    if tag == 'a':
+                        if html_node.hasAttribute('href'):
+                            odt_node.setAttribute('xlink:href',
+                                html_node.getAttribute('href'))
 
                 # Does the node need to create an style?
                 if 'style' in transform_map[tag]:
