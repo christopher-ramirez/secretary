@@ -38,7 +38,6 @@ import re
 import sys
 import zipfile
 import io
-from copy import deepcopy
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
