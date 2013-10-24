@@ -58,15 +58,17 @@ To be documented...
 
 
 ### Builtin Filters
-Secretary includes some predefined *jinja2* filters. Included filters are:
+Apart of the available Jinja2 filters. Secretary includes some additionals filters. These are:
 
 - **markdown(value)**
-Convert the value, a markdown formated string, into a ODT formated text. Example:
+    Convert the value, a markdown formated string, into a ODT formated text. Example:
 
         {{ invoice.description|markdown }}
 
+    **Output value will take the whole paragraph** so be aware of loosing text which is on the same paragraph of the markdown field.
+
 - **pad(value, length)**
-Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
+    Pad zeroes to `value` to the left until output's length will equal to `length`. Default output length is 5. Example:
 
         {{ invoice.number|pad(6) }}
 
