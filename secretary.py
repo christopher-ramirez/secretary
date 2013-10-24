@@ -232,7 +232,7 @@ class Render(object):
                     continue
 
                 field_description = field.getAttribute('text:description')
-                
+
                 if re.findall(r'\|markdown', field_content):
                     # a markdown should take the whole paragraph
                     field_description = 'text:p'
@@ -259,10 +259,10 @@ class Render(object):
         """
 
         auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
-        
+
         if not auto_styles.hasChildNodes():
             return None
-        
+
         for style_node in auto_styles.childNodes:
             if style_node.hasAttribute('style:name') and \
                (style_node.getAttribute('style:name') == style_name):
@@ -283,7 +283,7 @@ class Render(object):
         style_node.setAttribute('style:name', style_name)
         style_node.setAttribute('style:family', 'text')
         style_node.setAttribute('style:parent-style-name', 'Standard')
-        
+
         if attributes:
             for k, v in attributes.iteritems():
                 style_node.setAttribute('style:%s' % k, v)
@@ -309,7 +309,7 @@ class Render(object):
         except ImportError:
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
-        styles_cache = {}   # cache styles searching     
+        styles_cache = {}   # cache styles searching
         html_text = markdown(markdown_text)
         xml_object = parseString('<html>%s</html>' % html_text)
 
@@ -358,12 +358,20 @@ class Render(object):
 
                 html_node.parentNode.replaceChild(odt_node, html_node)
 
+        def node_to_string(node):
+            result = node.toxml()
 
-        result = ''.join(c.toxml() for c in xml_object.getElementsByTagName('html')[0].childNodes)
-        # A double linebreak should be replacece with an empty paragraph
-        result = result.replace('\n\n', '<text:p text:style-name="Standard"/>')
-        return result
+            # linebreaks in preformated nodes should be converted to <text:line-break/>
+            if (node.__class__.__name__ != 'Text') and \
+                (node.getAttribute('text:style-name') == 'Preformatted_20_Text'):
+                result = result.replace('\n', '<text:line-break/>')
 
+            # All double linebreak should be replaced with an empty paragraph
+            return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
+
+
+        return ''.join(node_as_str for node_as_str in map(node_to_string,
+                xml_object.getElementsByTagName('html')[0].childNodes))
 
 def render_template(template, **kwargs):
     """

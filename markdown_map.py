@@ -51,7 +51,8 @@ transform_map = {
 	'a': {
 		'replace_with': 'text:a',
 		'attributes': {
-			'xlink:type': 'simple'
+			'xlink:type': 'simple',
+			'xlink:href': ''
 		}
 	},
 
