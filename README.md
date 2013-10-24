@@ -16,7 +16,7 @@ Rendered documents are produced in ODT format, and can then be converted to PDF,
 ## Rendering a Template
 
     from secreatary import Render
-    
+
     engine = Render(template)
     result = engine.render(foo=foo, bar=bar)
 
@@ -27,7 +27,7 @@ To render a template create an instance of class `Render` and call the instance'
 Before rendering a template, you can configure the internal templating engine using the `Render` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
 
     from secreatary import Render
-    
+
     engine = Render(template)
 
     # Configure custom application filters
@@ -54,7 +54,21 @@ Secretary will handle multiline variable values replacing the line breaks with a
 
 ### Control Flow
 
-To be documented... 
+To be documented...
+
+
+### Builtin Filters
+Secretary includes some predefined *jinja2* filters. Included filters are:
+
+- **markdown(value)**
+Convert the value, a markdown formated string, into a ODT formated text. Example:
+
+        {{ invoice.description|markdown }}
+
+- **pad(value, length)**
+Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
+
+        {{ invoice.number|pad(6) }}
 
 
   [1]: http://jinja.pocoo.org/docs/templates/
