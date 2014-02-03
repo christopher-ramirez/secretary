@@ -300,6 +300,10 @@ class Render(object):
         """
             Convert a markdown text into a ODT formated text
         """
+
+        if not isinstance(markdown_text, basestring):
+            return ''
+
         from xml.dom import Node
         from markdown_map import transform_map
 
