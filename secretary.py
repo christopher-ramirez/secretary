@@ -42,6 +42,25 @@ from copy import deepcopy
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
+FLOW_REFERENCES = {
+    'text:p'             : 'text:p',
+    'paragraph'          : 'text:p',
+    'before::paragraph'  : 'text:p',
+    'after::paragraph'   : 'text:p',
+
+    'table:table-row'    : 'table:table-row',
+    'table-row'          : 'table:table-row',
+    'before::table-row'  : 'table:table-row',
+    'after::table-row'   : 'table:table-row',
+
+    'table:table-cell'   : 'table:table-cell',
+    'table-cell'         : 'table:table-cell',
+    'before::table-cell' : 'table:table-cell',
+    'after::table-cell'  : 'table:table-cell',
+}
+
+SUPPORTED_FIELD_REFERECES = ['text:p', 'table:table-row', 'table:table-cell']
+
 # ---- Exceptions
 class SecretaryError(Exception):
     pass
@@ -161,6 +180,7 @@ class Render(object):
 
         # Render content.xml
         self.prepare_template_tags(self.content)
+        # print(self.content.toprettyxml())
         template = self.environment.from_string(self.content.toxml())
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
@@ -226,28 +246,44 @@ class Render(object):
             if field.hasChildNodes():
                 field_content = field.childNodes[0].data.replace('\n', '')
 
-                jinja_tags = re.findall(r'(\{.*?\}*})', field_content)
-                if not jinja_tags:
+                if not re.findall(r'(\{.*?\}*})', field_content):
                     # Field does not contains jinja template tags
                     continue
 
-                field_description = field.getAttribute('text:description')
+                keep_field = field
+                field_reference = field.getAttribute('text:description')
                 
                 if re.findall(r'\|markdown', field_content):
                     # a markdown should take the whole paragraph
-                    field_description = 'text:p'
+                    field_reference = 'text:p'
 
-                if not field_description:
-                    new_node = self.create_text_span_node(xml_document, field_content)
+                if not field_reference:
+                    if re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip()):
+                        raise SecretaryError('Control-Flow tags ("%s") must have a field reference.' % field_content)
+
+                    jinja_tag_node = self.create_text_span_node(xml_document, field_content)
                 else:
-                    if field_description in \
-                        ['text:p', 'table:table-row', 'table:table-cell']:
-                        field = self.node_parents(field, field_description)
+                    odt_reference = FLOW_REFERENCES.get(field_reference.strip(), field_reference)
+                    if odt_reference in SUPPORTED_FIELD_REFERECES:
+                        field = self.node_parents(field, odt_reference)
 
-                    new_node = self.create_text_node(xml_document, field_content)
+                    jinja_tag_node = self.create_text_node(xml_document, field_content)
 
                 parent = field.parentNode
-                parent.insertBefore(new_node, field)
+
+                if not field_reference.startswith('after::'):
+                    parent.insertBefore(jinja_tag_node, field)
+                else:
+                    if field.isSameNode(parent.lastChild):
+                        parent.appendChild(jinja_tag_node)
+                    else:
+                        parent.insertBefore(jinja_tag_node, field.nextSibling)
+
+                if field_reference.startswith('after::') or field_reference.startswith('before::'):
+                    # Avoid removing whole container, just original text:p parent
+                    field = self.node_parents(keep_field, 'text:p')
+                    parent = field.parentNode
+                
                 parent.removeChild(field)
 
 
