@@ -24,7 +24,7 @@ class PyTest(TestCommand):
 
 setup(
     name='secretary',
-    version='0.0.1',
+    version='0.1.0',
     url='https://github.com/christopher-ramirez/secretary',
     license='BSD',
     author='Christopher Ramírez',
@@ -32,7 +32,7 @@ setup(
     description=('Take the power of Jinja2 templates to OpenOffice and '
                  'LibreOffice and create reports and letters in your web applications'),
     long_description=read('README.md'),
-    py_modules=['secretary'],
+    py_modules=['secretary', 'markdown_map'],
     platforms='any',
     install_requires=[
         'Jinja2', 'markdown2'

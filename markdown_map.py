@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from random import randint
+
 # Transform map used by the markdown filter. transform_map have
 # instructions of how to transform a HTML style tag into a ODT document
 # styled tag. Some ODT tags may need extra attributes; these are defined
@@ -39,7 +41,7 @@ common_styles = {
         }
     },
 
-    'p': { 
+    'p': {
         'replace_with': 'text:p',
         'style_attributes': {
             'style-name': 'Standard'
@@ -51,7 +53,8 @@ transform_map = {
 	'a': {
 		'replace_with': 'text:a',
 		'attributes': {
-			'xlink:type': 'simple'
+			'xlink:type': 'simple',
+			'xlink:href': ''
 		}
 	},
 
@@ -102,5 +105,23 @@ transform_map = {
         'style_attributes': {
             'style-name': 'Preformatted_20_Text'
         }
+    },
+
+    'ul': {
+        'replace_with': 'text:list',
+        'attributes': {
+            'xml:id': 'list' + str(randint(100000000000000000,900000000000000000))
+        }
+    },
+
+    'ol': {
+        'replace_with': 'text:list',
+        'attributes': {
+            'xml:id': 'list' + str(randint(100000000000000000,900000000000000000))
+        }
+    },
+
+    'li': {
+        'replace_with': 'text:list-item'
     },
 }
