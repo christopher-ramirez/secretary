@@ -1,1 +1,107 @@
-<h1>Secretary Github page</h1>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Secretary :: The power of Jinja in Libre/OpenOffice</title>
+
+        <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootswatch/3.1.1/readable/bootstrap.min.css">
+
+        <style>
+            .docs-container { max-width: 800px }
+            .bs-callout     { margin-bottom: 4rem; }
+            .bs-callout p   { margin-bottom: 0px; }
+        </style>
+    </head>
+    <body>
+        <header class="navbar ndocs-nav" role="banner">
+            <div class="container">
+                <div class="navbar-header">
+                    <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a href="#" class="navbar-brand" alt="Less">Secretary</a>
+                </div>
+                <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">GitHub <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                <li> <a href="https://github.com/christopher-ramirez/secretary">Official Repo</a> </li>
+                                <li> <a href="https://github.com/christopher-ramirez/secretary/issues?state=open">Issues</a> </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+
+        <div class="jumbotron">
+            <div class="container master-head">
+              <h1>Secretary</h1>
+              <p class="lead">Take the power of Jinja2 templates to OpenOffice and LibreOffice and create reports in your web applications.</p>
+            </div>
+        </div>
+
+        <div class="container docs-container text-justify">
+            <p class="lead">Secretary is an alternative solution for creating office documents and reports in OpenDocument Text format from templates that can be visually composed using the OpenOffice.org/LibreOffice Writer word processor.</p>
+
+            <p class="lead">Secretary use the <a href="http://jinja.pocoo.org/docs/templates/" target="_blank">semantics of jinja2 templates</a> to render ODT files. Most features in jinja can be used into your ODT templates including variable printing, filters and flow control.</p>
+
+            <p class="lead">Rendered documents are produced in ODT format, and can then be converted to PDF, MS Word or other supported formats using the UNO Bridge or a library like <a href="https://github.com/mirkonasato/pyodconverter" target="_blank">PyODConverter</a></p>
+
+            <p>&nbsp;</p>
+
+            <h2>Features</h2>
+            <ul>
+                <li>
+                    <div class="bs-callout">
+                        <h4>WYSIWYG template composing</h4>
+                        <p>Compose templates in Writter. Secretary will keep original formating.</p>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="bs-callout">
+                        <h4>No LibreOffice install required</h4>
+                        <p>Secretary works at file level so no binary installation is required.</p>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="bs-callout">
+                        <h4>Use familiar template semantics</h4>
+                        <p>Many Python Web frameworks use jinja2 templates or similiars, like Django templates.</p>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="bs-callout">
+                        <h4>Use jinja2 filters or create your owns</h4>
+                        <p>Use filters you are already familiar with, or create your owns! Secretay include native support for Makdown throught the <code>markdown</code> filter.</p>
+                    </div>
+                </li>
+            </ul>
+
+            <hr>
+
+            <h2>Installing<h2>
+            <h3 class="text-center">
+                <code>$ pip install secretary</code> <br />
+                <small class="muted">That's simple!</small>
+            </h3>
+
+            <hr>
+
+        </div>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    </body>
+</html>
