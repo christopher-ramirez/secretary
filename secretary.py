@@ -502,7 +502,7 @@ if __name__ == "__main__":
     ]
 
 
-    render = Render('a.odt')
+    render = Render('simple_template.odt')
     result = render.render(countries=countries, document=document)
 
     output = open('rendered.odt', 'w')
