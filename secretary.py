@@ -237,6 +237,28 @@ class Render(object):
         """
         return xml_document.createTextNode(text)
 
+    def inc_node_fields_count(self, node, field_type='variable'):
+        """ Increase field count of node and its parents """
+
+        if node is None:
+            return
+
+        if not hasattr(node, 'secretary_field_count'):
+            setattr(node, 'secretary_field_count', 0)
+
+        if not hasattr(node, 'secretary_variable_count'):
+            setattr(node, 'secretary_variable_count', 0)
+
+        if not hasattr(node, 'secretary_block_count'):
+            setattr(node, 'secretary_block_count', 0)
+
+        node.secretary_field_count += 1
+        if field_type == 'variable':
+            node.secretary_variable_count += 1
+        else:
+            node.secretary_block_count += 1
+
+        self.inc_node_fields_count(node.parentNode, field_type)
 
     def prepare_template_tags(self, xml_document):
         """
@@ -247,6 +269,21 @@ class Render(object):
         """
         fields = xml_document.getElementsByTagName('text:text-input')
 
+        # First, count secretary fields
+        for field in fields:
+            if not field.hasChildNodes():
+                continue
+
+            field_content = field.childNodes[0].data.replace('\n', '')
+
+            if not re.findall(r'(\{.*?\}*})', field_content):
+                # Field does not contains jinja template tags
+                continue
+
+            is_block_tag = re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip())
+            self.inc_node_fields_count(field.parentNode,
+                                       'variable' if not is_block_tag else 'block')
+
         for field in fields:
             if field.hasChildNodes():
                 field_content = field.childNodes[0].data.replace('\n', '')
@@ -254,6 +291,10 @@ class Render(object):
                 if not re.findall(r'(\{.*?\}*})', field_content):
                     # Field does not contains jinja template tags
                     continue
+
+                is_block_tag = re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip())
+                # self.inc_node_fields_count(field.parentNode,
+                #                            'variable' if not is_block_tag else 'block')
 
                 keep_field = field
                 field_reference = field.getAttribute('text:description')
@@ -263,10 +304,16 @@ class Render(object):
                     field_reference = 'text:p'
 
                 if not field_reference:
-                    if re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip()):
-                        raise SecretaryError('Control-Flow tags ("%s") must have a field reference.' % field_content)
+                    if is_block_tag:
+                        # field = field.parentNode
+                        while field.parentNode.secretary_field_count  <= 1:
+                            field = field.parentNode
 
-                    jinja_tag_node = self.create_text_span_node(xml_document, field_content)
+                        if field is not None:
+                            jinja_tag_node = field
+                            jinja_tag_node = self.create_text_node(xml_document, field_content)
+                    else:
+                        jinja_tag_node = self.create_text_span_node(xml_document, field_content)
                 else:
                     odt_reference = FLOW_REFERENCES.get(field_reference.strip(), field_reference)
                     if odt_reference in SUPPORTED_FIELD_REFERECES:
@@ -450,7 +497,7 @@ if __name__ == "__main__":
     ]
 
 
-    render = Render('simple_template.odt')
+    render = Render('a.odt')
     result = render.render(countries=countries, document=document)
 
     output = open('rendered.odt', 'w')
