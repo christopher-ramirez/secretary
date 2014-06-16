@@ -350,7 +350,7 @@ class Render(object):
 
         styles_cache = {}   # cache styles searching
         html_text = markdown(markdown_text)
-        xml_object = parseString('<html>%s</html>' % html_text)
+        xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
         # Some tags may require extra attributes in ODT.
