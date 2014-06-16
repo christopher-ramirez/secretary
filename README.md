@@ -16,7 +16,7 @@ Rendered documents are produced in ODT format, and can then be converted to PDF,
 ## Rendering a Template
 
     from secreatary import Render
-
+    
     engine = Render(template)
     result = engine.render(foo=foo, bar=bar)
 
@@ -27,7 +27,7 @@ To render a template create an instance of class `Render` and call the instance'
 Before rendering a template, you can configure the internal templating engine using the `Render` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
 
     from secreatary import Render
-
+    
     engine = Render(template)
 
     # Configure custom application filters
@@ -48,27 +48,69 @@ Since Secretary use the same template syntax of Jinja2, to print a varible type 
     {{ foo.bar }}
     {{ foo['bar'] }}
 
-However, mixing template instructions and normal text into the template document may become confusing and clutter the layout. Secretary recommends using an alternative way of inserting fields. Insert a visual field in LibreOffice Writer from the menu `Insert` > `Fields` > `Other...` (or just press `Ctrl+F2`), then click on the `Functions` tab and select `Input field`. Click `Insert`. A dialog will appear where you can insert the print instructions. You can even insert simple control flow tags to dynamically change what is printed in the field.
+However, mixing template instructions and normal text into the template document may become confusing and clutter the layout and most important, in most cases will produce invalid ODT documents. Secretary recommends using an alternative way of inserting fields. Insert a visual field in LibreOffice Writer from the menu `Insert` > `Fields` > `Other...` (or just press `Ctrl+F2`), then click on the `Functions` tab and select `Input field`. Click `Insert`. A dialog will appear where you can insert the print instructions. You can even insert simple control flow tags to dynamically change what is printed in the field.
 
 Secretary will handle multiline variable values replacing the line breaks with a `<text:line-break/>` tag.
 
 ### Control Flow
 
-To be documented...
+Most of the time secretary will handle the internal composing of XML when you insert control flow tags (`{% for foo in foos %}`, `{% if bar %}`, etc and its enclosing tags. This is done by finding the present or absence of other secretary tags within the internal XML tree.
 
+#### Examples document structures
+**Printing multiple records in a table**
+``` plain
+-----------------------------------------
+| RECORDS ID        |  NAME              |
+-----------------------------------------
+| {% for record in records %}            |
+-----------------------------------------
+| {{ record.id }}   |  {{ record.name }} |
+-----------------------------------------
+| {% endfor %}                           |
+-----------------------------------------
+```
+**Conditional paragraphs**
+> `{% if already_paid %}`
+>  YOU ALREADY PAID
+> `{% else %}`
+>  YOU HAVEN'T PAID
+> `{% endif %}`
+
+The last example could had been simplified into a single paragraph in Writer like: 
+
+> `{% if already_paid %}`YOU ALREADY PAID`{% else %}`YOU HAVEN'T PAID`{% endif %}`
+
+**Printing a list of names**
+
+> * `{% for name in names %}`
+> * `{{ name }}`
+> * `{* endfor %}`
+
+Automatic control flow in Secretary will handle the intuitive result of the above examples and similar thereof.
+
+Although most of the time the automatic handling of control flow in secretary may be good enough, we still provide an additional method for manual control of the flow. Use the `reference` property of the field to specify where where the control flow tag will be used or internally moved within the XML document:
+
+* `paragraph`: Whole paragraph containing the field will be replaced with the field content.
+* `before::paragraph`: Field content will be moved before the current paragraph.
+* `after::paragraph`: Field content will be moved after the current paragraph.
+* `row`: The entire table row containing the field will be replace with the field content.
+* `before::row`: Field content will be moved before the current table row.
+* `after::row`: Field content will be moved after the current table row.
+* `cell`: The entire table cell will be replaced with the current field content. Even though this setting is available, it is not recommended. Generated documents may not be what you expected.
+* `before::cell`: Same as `before::row` but for a table cell.
+* `after::cell`: Same as `after::row` but for a table cell.
+> Field content is the control flow tag you insert with the Writer *input field*
 
 ### Builtin Filters
-Apart of the available Jinja2 filters. Secretary includes some additionals filters. These are:
+Secretary includes some predefined *jinja2* filters. Included filters are:
 
-- **markdown(value)**
-    Convert the value, a markdown formated string, into a ODT formated text. Example:
+- **markdown(value)**   
+Convert the value, a markdown formated string, into a ODT formated text. Example:
 
         {{ invoice.description|markdown }}
-
-    **Output value will take the whole paragraph** so be aware of loosing text which is on the same paragraph of the markdown field.
-
-- **pad(value, length)**
-    Pad zeroes to `value` to the left until output's length will equal to `length`. Default output length is 5. Example:
+ 
+- **pad(value, length)**   
+Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
 
         {{ invoice.number|pad(6) }}
 
