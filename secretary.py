@@ -38,6 +38,7 @@ import re
 import sys
 import zipfile
 import io
+from HTMLParser import HTMLParser
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
@@ -181,12 +182,12 @@ class Render(object):
             returns the rendered ODF document.
         """
 
+        html_parser = HTMLParser()
         self.unpack_template()
 
         # Render content.xml
         self.prepare_template_tags(self.content)
-        # print(self.content.toprettyxml())
-        template = self.environment.from_string(self.content.toxml())
+        template = self.environment.from_string(html_parser.unescape(self.content.toxml()))
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
 
@@ -200,7 +201,7 @@ class Render(object):
 
         # Render style.xml
         self.prepare_template_tags(self.styles)
-        template = self.environment.from_string(self.styles.toxml())
+        template = self.environment.from_string(html_parser.unescape(self.styles.toxml()))
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
@@ -332,7 +333,7 @@ class Render(object):
                     # Avoid removing whole container, just original text:p parent
                     field = self.node_parents(keep_field, 'text:p')
                     parent = field.parentNode
-                
+
                 parent.removeChild(field)
 
 
