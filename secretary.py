@@ -38,7 +38,6 @@ import re
 import sys
 import zipfile
 import io
-from HTMLParser import HTMLParser
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
@@ -181,27 +180,35 @@ class Render(object):
             Unpack and render the internal template and
             returns the rendered ODF document.
         """
+        def unescape_gt_lt(text):
+            # unescape XML entities gt and lt
+            unescape_entities = {
+                r'({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
+                r'({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
+            }
+            for pattern, repl in unescape_entities.iteritems():
+                text = re.sub(pattern, repl, text, flags=re.IGNORECASE or re.DOTALL)
 
-        html_parser = HTMLParser()
+            return text
+
         self.unpack_template()
 
         # Render content.xml
         self.prepare_template_tags(self.content)
-        template = self.environment.from_string(html_parser.unescape(self.content.toxml()))
+        template = self.environment.from_string(unescape_gt_lt(self.content.toxml()))
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
 
         # Replace original body with rendered body
         original_body = self.content.getElementsByTagName('office:body')[0]
-        rendered_body = parseString(result.encode('ascii', 'xmlcharrefreplace')) \
-            .getElementsByTagName('office:body')[0]
+        rendered_body = parseString(result.encode('ascii', 'xmlcharrefreplace')).getElementsByTagName('office:body')[0]
 
         document = self.content.getElementsByTagName('office:document-content')[0]
         document.replaceChild(rendered_body, original_body)
 
         # Render style.xml
         self.prepare_template_tags(self.styles)
-        template = self.environment.from_string(html_parser.unescape(self.styles.toxml()))
+        template = self.environment.from_string(unescape_gt_lt(self.styles.toxml()))
         result = template.render(**kwargs)
         result = result.replace('\n', '<text:line-break/>')
         self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
