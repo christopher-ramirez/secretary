@@ -16,7 +16,7 @@ Rendered documents are produced in ODT format, and can then be converted to PDF,
 ## Rendering a Template
 
     from secreatary import Render
-    
+
     engine = Render(template)
     result = engine.render(foo=foo, bar=bar)
 
@@ -27,7 +27,7 @@ To render a template create an instance of class `Render` and call the instance'
 Before rendering a template, you can configure the internal templating engine using the `Render` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
 
     from secreatary import Render
-    
+
     engine = Render(template)
 
     # Configure custom application filters
@@ -76,7 +76,7 @@ Most of the time secretary will handle the internal composing of XML when you in
 >  YOU HAVEN'T PAID
 > `{% endif %}`
 
-The last example could had been simplified into a single paragraph in Writer like: 
+The last example could had been simplified into a single paragraph in Writer like:
 
 > `{% if already_paid %}`YOU ALREADY PAID`{% else %}`YOU HAVEN'T PAID`{% endif %}`
 
@@ -101,15 +101,18 @@ Although most of the time the automatic handling of control flow in secretary ma
 * `after::cell`: Same as `after::row` but for a table cell.
 > Field content is the control flow tag you insert with the Writer *input field*
 
+### Features of jinja2 not supported
+Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
+
 ### Builtin Filters
 Secretary includes some predefined *jinja2* filters. Included filters are:
 
-- **markdown(value)**   
+- **markdown(value)**
 Convert the value, a markdown formated string, into a ODT formated text. Example:
 
         {{ invoice.description|markdown }}
- 
-- **pad(value, length)**   
+
+- **pad(value, length)**
 Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
 
         {{ invoice.number|pad(6) }}
