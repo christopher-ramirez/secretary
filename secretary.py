@@ -293,9 +293,6 @@ class Render(object):
                     continue
 
                 is_block_tag = re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip())
-                # self.inc_node_fields_count(field.parentNode,
-                #                            'variable' if not is_block_tag else 'block')
-
                 keep_field = field
                 field_reference = field.getAttribute('text:description')
 
@@ -305,12 +302,12 @@ class Render(object):
 
                 if not field_reference:
                     if is_block_tag:
-                        # field = field.parentNode
+                        # Find the node where this control flow field we
+                        # consider will be really needed.
                         while field.parentNode.secretary_field_count  <= 1:
                             field = field.parentNode
 
                         if field is not None:
-                            jinja_tag_node = field
                             jinja_tag_node = self.create_text_node(xml_document, field_content)
                     else:
                         jinja_tag_node = self.create_text_span_node(xml_document, field_content)
