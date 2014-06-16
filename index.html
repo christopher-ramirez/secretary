@@ -8,11 +8,15 @@
 
         <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
         <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootswatch/3.1.1/readable/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/0.0.1/prism.css" />
 
         <style>
+            body { padding-bottom: 2em; }
             .docs-container { max-width: 800px }
             .bs-callout     { margin-bottom: 4rem; }
             .bs-callout p   { margin-bottom: 0px; }
+            pre[class*="language-"] { margin-bottom: 22px }
+            pre[class*='language-'] > code[data-language] { overflow: auto }
         </style>
     </head>
     <body>
@@ -84,7 +88,7 @@
                 <li>
                     <div class="bs-callout">
                         <h4>Use jinja2 filters or create your owns</h4>
-                        <p>Use filters you are already familiar with, or create your owns! Secretay include native support for Makdown throught the <code>markdown</code> filter.</p>
+                        <p>Use filters you are already familiar with, or create your owns! Secretay include native support for Markdown throught the <code>markdown</code> filter.</p>
                     </div>
                 </li>
             </ul>
@@ -96,12 +100,47 @@
                 <code>$ pip install secretary</code> <br />
                 <small class="muted">That's simple!</small>
             </h3>
+            <p>Alternatively you can also clone <a href="https://github.com/christopher-ramirez/secretary">the official repo</a> and work with it.
 
             <hr>
 
+            <h2>Basic Usage</h2>
+            <p class="lead">Secretary implements a class called <code>Render</code>. It takes a single argument called <code>template</code> which can be a filename or a file object. The file most be an ODT document that will be used as template</p>
+<pre>
+<code class="language-python">
+from secreatary import Render
+
+engine = Render(template)
+result = engine.render(foo=foo, bar=bar)
+</code>
+</pre>
+
+            <p class="lead">To render a template create an instance of class <code>Render</code> and call the instance's method <code>render</code> passing the template variables as keyword arguments. The function will return the rendered document in binary format.</p>
+
+            <p class="lead">You can configure the internal jinja2 engine through the <code>environment</code> property of a <code>Render</code> instance. <code>environment</code> is an instance of <a href="http://jinja.pocoo.org/docs/api/#jinja2.Environment">Environment</a>. This is how you would add a custom filter:</p>
+<pre>
+<code class="language-python">
+engine = Render(template)
+
+# Configure custom application filters
+engine.environment.filters['custom_filer'] = filter_function
+result = engine.render(foo=foo, bar=bar)
+</code>
+</pre>
+
+            <hr>
+
+            <h2>Composing Templates</h2>
+            <p class="lead">Secretary templates are simple ODT documents. You can create them using Writer. An OpenDocument file is basically a ZIP archive containing some XML files.</p>
+
+            <p class="lead">Template instructions (printing and flow control) should be added through <b>Input Fields</b>. In Writer you insert input fields from <i>Menu</i> > <i>Insert</i> > <i>Fields</i> > <i>Other...</i> or just press <code>CTRL + F2</code>. Then select <b>Functions</b> tab and select <b>Input Field</b> from the list on the left. Finally click <b>Insert</b> button and a dialog will appear where you can type template instructions.</p>
+
+            <h3>Printing Variables</h3>
+            <p class="lead">In the <i>Input Field</i> dialog type <code>{{ variable }}</code> to print te content of </i>variable</i> into the final document.</p>
         </div>
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
         <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/0.0.1/prism.js"></script>
     </body>
 </html>
