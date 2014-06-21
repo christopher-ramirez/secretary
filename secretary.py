@@ -497,7 +497,7 @@ if __name__ == "__main__":
     render = Render('a.odt')
     result = render.render(countries=countries, document=document)
 
-    output = open('rendered.odt', 'w')
+    output = open('rendered.odt', 'wb')
     output.write(result)
 
     print("Template rendering finished! Check rendered.odt file.")
