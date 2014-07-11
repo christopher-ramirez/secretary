@@ -34,10 +34,11 @@ the jinja2 template engine. To render a template:
 """
 from __future__ import unicode_literals, print_function
 
+import io
 import re
 import sys
+import logging
 import zipfile
-import io
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
@@ -120,7 +121,8 @@ class Render(object):
             template: Either the path to the file, or a file-like object.
                       If it is a path, the file will be open with mode read 'r'.
         """
-
+        self.log = logging.getLogger(__name__)
+        self.log.debug('Initing a Render instance\nTemplate: %s', template)
         self.template = template
         self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
 
@@ -130,25 +132,27 @@ class Render(object):
 
         self.file_list = {}
 
+
     def unpack_template(self):
         """
             Loads the template into a ZIP file, allowing to make
             CRUD operations into the ZIP archive.
         """
 
+        self.log.debug('Unpacking template file')
         with zipfile.ZipFile(self.template, 'r') as unpacked_template:
             # go through the files in source
             for zi in unpacked_template.filelist:
                 file_contents = unpacked_template.read( zi.filename )
                 self.file_list[zi.filename] = file_contents
+                self.log.debug('File "%s" unpacked', zi.filename)
 
                 if zi.filename == 'content.xml':
+                    self.log.debug('Parsing content.xml\n%s', file_contents)
                     self.content = parseString( file_contents )
                 elif zi.filename == 'styles.xml':
+                    self.log.debug('Parsing styles.xml\n%s', file_contents)
                     self.styles = parseString( file_contents )
-
-
-
 
 
     def pack_document(self):
@@ -158,19 +162,21 @@ class Render(object):
 
         # Save rendered content and headers
         self.rendered = io.BytesIO()
-
+        self.log.debug('Packing document...')
         with zipfile.ZipFile(self.rendered, 'a') as packed_template:
             for filename, content in self.file_list.items():
-                if filename == 'content.xml':
-                    content = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
-
-                if filename == 'styles.xml':
+                if filename in ['content.xml', 'styles.xml']:
+                    self.log.debug(
+                        'Trying to pack "%s" into archive and encoding it into ascii\n%s',
+                        filename, self.styles.toxml())
                     content = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
 
                 if sys.version_info >= (2, 7):
                     packed_template.writestr(filename, content, zipfile.ZIP_DEFLATED)
+                    self.log.debug('File "%s" packed into archive with ZIP_DEFLATED', filename)
                 else:
                     packed_template.writestr(filename, content)
+                    self.log.debug('File "%s" packed into archive', filename)
 
 
 
@@ -180,6 +186,7 @@ class Render(object):
             Unpack and render the internal template and
             returns the rendered ODF document.
         """
+        self.log.debug('render called with\n%s', kwargs)
         def unescape_gt_lt(text):
             # unescape XML entities gt and lt
             unescape_entities = {
@@ -189,29 +196,41 @@ class Render(object):
             for pattern, repl in unescape_entities.iteritems():
                 text = re.sub(pattern, repl, text, flags=re.IGNORECASE or re.DOTALL)
 
+            self.log.debug('GT and LT tags successfully unescaped\n%s', text)
             return text
 
         self.unpack_template()
 
         # Render content.xml
+        self.log.debug('Trying to render content.xml with jinja')
         self.prepare_template_tags(self.content)
         template = self.environment.from_string(unescape_gt_lt(self.content.toxml()))
         result = template.render(**kwargs)
+        self.log.debug('Jinja2 successfully parsed content.xml')
         result = result.replace('\n', '<text:line-break/>')
+        self.log.debug('Line breaks replaced successfully')
 
         # Replace original body with rendered body
         original_body = self.content.getElementsByTagName('office:body')[0]
         rendered_body = parseString(result.encode('ascii', 'xmlcharrefreplace')).getElementsByTagName('office:body')[0]
+        self.log.debug(
+            'Replacing original document body with rendered version\n%s', result)
 
         document = self.content.getElementsByTagName('office:document-content')[0]
         document.replaceChild(rendered_body, original_body)
+        self.log.debug('Original body replaced with the rendered version')
 
-        # Render style.xml
+        # Render styles.xml
+        self.log.debug('Trying to render styles.xml with jinja')
         self.prepare_template_tags(self.styles)
         template = self.environment.from_string(unescape_gt_lt(self.styles.toxml()))
         result = template.render(**kwargs)
+        self.log.debug('Jinja2 successfully parsed styles.xml')
         result = result.replace('\n', '<text:line-break/>')
+        self.log.debug('Lines break successfully encoded to <text:linebreaks>.')
+        self.log.debug('Now replacing template styles.xml with the rendered version')
         self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
+        self.log.debug('New styles.xml file successfully parsed')
 
         self.pack_document()
         return self.rendered.getvalue()
@@ -275,6 +294,7 @@ class Render(object):
             replaced with a blank node and moved into the ancestor
             tag defined in description field attribute.
         """
+        self.log.debug('Preparing template tags\n%s', xml_document.toxml())
         fields = xml_document.getElementsByTagName('text:text-input')
 
         # First, count secretary fields
@@ -305,7 +325,7 @@ class Render(object):
                 field_reference = field.getAttribute('text:description')
 
                 if re.findall(r'\|markdown', field_content):
-                    # a markdown should take the whole paragraph
+                    # a markdown field should take the whole paragraph
                     field_reference = 'text:p'
 
                 if not field_reference:
@@ -500,7 +520,6 @@ if __name__ == "__main__":
         {'country': 'Chile', 'capital': 'Santiago'},
         {'country': 'Mexico', 'capital': 'MExico City', 'cities': ['puebla', 'cancun']},
     ]
-
 
     render = Render('simple_template.odt')
     result = render.render(countries=countries, document=document)
