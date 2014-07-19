@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# * Copyright (c) 2012-2014 Christopher Ramírez chris.ramirezg@gmail.com
+# * Copyright (c) 2012-2014 Christopher Ramirez chris.ramirezg@gmail.com
 # *
 # * Licensed under the MIT license.
 
@@ -11,7 +11,7 @@ Secretary
     variable printing and control flow.
 
     To render a template:
-        engine = Render(template_file)
+        engine = Renderer(template_file)
         result = engine.render(template_var1=...)
 """
 from __future__ import unicode_literals, print_function
@@ -77,20 +77,20 @@ def pad_string(value, length=5):
     return value.zfill(length)
 
 
-class Render(object):
+class Renderer(object):
     """
         Main engine to convert and ODT document into a jinja
         compatible template.
 
         Basic use example:
-            engine = Render('template')
+            engine = Renderer('template')
             result = engine.render()
 
 
-        Render provides an enviroment variable which can be used
+        Renderer provides an enviroment variable which can be used
         to provide custom filters to the ODF render.
 
-            engine = Render('template.odt')
+            engine = Renderer('template.odt')
             engine.environment.filters['custom_filer'] = filter_function
             result = engine.render()
     """
@@ -98,13 +98,13 @@ class Render(object):
 
     def __init__(self, template, **kwargs):
         """
-        Builds a Render instance and assign init the internal enviroment.
+        Builds a Renderer instance and assign init the internal enviroment.
         Params:
             template: Either the path to the file, or a file-like object.
                       If it is a path, the file will be open with mode read 'r'.
         """
         self.log = logging.getLogger(__name__)
-        self.log.debug('Initing a Render instance\nTemplate: %s', template)
+        self.log.debug('Initing a Renderer instance\nTemplate: %s', template)
         self.template = template
         self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
 
@@ -477,7 +477,7 @@ def render_template(template, **kwargs):
         Render a ODF template file
     """
 
-    engine = Render(file)
+    engine = Renderer(file)
     return engine.render(**kwargs)
 
 
@@ -497,13 +497,13 @@ if __name__ == "__main__":
         {'country': 'United States', 'capital': 'Washington', 'cities': ['miami', 'new york', 'california', 'texas', 'atlanta']},
         {'country': 'England', 'capital': 'London', 'cities': ['gales']},
         {'country': 'Japan', 'capital': 'Tokio', 'cities': ['hiroshima', 'nagazaki']},
-        {'country': 'Nicaragua', 'capital': 'Managua', 'cities': ['león', 'granada', 'masaya']},
+        {'country': 'Nicaragua', 'capital': 'Managua', 'cities': ['leon', 'granada', 'masaya']},
         {'country': 'Argentina', 'capital': 'Buenos aires'},
         {'country': 'Chile', 'capital': 'Santiago'},
         {'country': 'Mexico', 'capital': 'MExico City', 'cities': ['puebla', 'cancun']},
     ]
 
-    render = Render('simple_template.odt')
+    render = Renderer('simple_template.odt')
     result = render.render(countries=countries, document=document)
 
     output = open('rendered.odt', 'wb')
