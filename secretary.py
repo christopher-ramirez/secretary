@@ -6,13 +6,13 @@
 
 """
 Secretary
-Take the power of Jinja2 templates to OpenOffice and LibreOffice.
+    This project is a document engine which make use of LibreOffice
+    documents as templates and use the semantics of jinja2 to control
+    variable printing and control flow.
 
-This file implements Render. Render provides an interface to render
-Open Document Format (ODF) documents to be used as templates using
-the jinja2 template engine. To render a template:
-    engine = Render(template_file)
-    result = engine.render(template_var1=...)
+    To render a template:
+        engine = Render(template_file)
+        result = engine.render(template_var1=...)
 """
 from __future__ import unicode_literals, print_function
 
