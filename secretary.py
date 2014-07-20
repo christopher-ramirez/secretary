@@ -125,9 +125,9 @@ class Renderer(object):
         self.log.debug('Unpacking template file')
         
         archive_files = {}
-        with zipfile.ZipFile(template, 'r') as archive:
-            for zfile in archive.filelist:
-                archive_files[zfile.filename] = archive.read(zfile.filename)
+        archive = zipfile.ZipFile(template, 'r')
+        for zfile in archive.filelist:
+            archive_files[zfile.filename] = archive.read(zfile.filename)
 
         return archive_files
 
@@ -139,7 +139,7 @@ class Renderer(object):
         self.log.debug('packing document')
         zip_file = io.BytesIO()
 
-        with zipfile.ZipFile(zip_file, 'a') as zipdoc:
+        zipdoc = zipfile.ZipFile(zip_file, 'a')
             for fname, content in files.items():
                 if sys.version_info >= (2, 7):
                     zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
