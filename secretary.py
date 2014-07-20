@@ -55,7 +55,7 @@ class SecretaryError(Exception):
 
 class UndefinedSilently(Undefined):
     # Silently undefined,
-    # see http://stackoverflow.com/questions/6182498/jinja2-how-to-make-it-fail-silently-like-djangotemplate
+    # see http://stackoverflow.com/questions/6182498
     def silently_undefined(*args, **kwargs):
         return ''
 
@@ -96,139 +96,267 @@ class Renderer(object):
     """
 
 
-    def __init__(self, template, **kwargs):
+    def __init__(self, environment=None, **kwargs):
         """
-        Builds a Renderer instance and assign init the internal enviroment.
-        Params:
-            template: Either the path to the file, or a file-like object.
-                      If it is a path, the file will be open with mode read 'r'.
+        Create a Renderer instance.
+
+        args:
+            environment: Use this jinja2 enviroment. If not specified, we
+                         create a new environment for this class instance.
+
+        returns:
+            None
         """
         self.log = logging.getLogger(__name__)
-        self.log.debug('Initing a Renderer instance\nTemplate: %s', template)
-        self.template = template
-        self.environment = Environment(undefined=UndefinedSilently, autoescape=True)
+        self.log.debug('Initing a Renderer instance\nTemplate')
 
-        # Register provided filters
-        self.environment.filters['pad'] = pad_string
-        self.environment.filters['markdown'] = self.markdown_filter
+        if environment:
+            self.environment = environment
+        else:
+            self.environment = Environment(undefined=UndefinedSilently,
+                                           autoescape=True)
+            # Register filters
+            self.environment.filters['pad'] = pad_string
+            self.environment.filters['markdown'] = self.markdown_filter
 
-        self.file_list = {}
-
-
-    def unpack_template(self):
-        """
-            Loads the template into a ZIP file, allowing to make
-            CRUD operations into the ZIP archive.
-        """
-
+    def _unpack_template(self, template):
+        # And Open/libreOffice is just a ZIP file. Here we unarchive the file
+        # and return a dict with every file in the archive
         self.log.debug('Unpacking template file')
-        with zipfile.ZipFile(self.template, 'r') as unpacked_template:
-            # go through the files in source
-            for zi in unpacked_template.filelist:
-                file_contents = unpacked_template.read( zi.filename )
-                self.file_list[zi.filename] = file_contents
-                self.log.debug('File "%s" unpacked', zi.filename)
+        
+        archive_files = {}
+        with zipfile.ZipFile(template, 'r') as archive:
+            for zfile in archive.filelist:
+                archive_files[zfile.filename] = archive.read(zfile.filename)
 
-                if zi.filename == 'content.xml':
-                    self.log.debug('Parsing content.xml\n%s', file_contents)
-                    self.content = parseString( file_contents )
-                elif zi.filename == 'styles.xml':
-                    self.log.debug('Parsing styles.xml\n%s', file_contents)
-                    self.styles = parseString( file_contents )
+        return archive_files
+
+        self.log.debug('Unpack completed')
 
 
-    def pack_document(self):
-        """
-            Make an archive from _unpacked_template
-        """
+    def _pack_document(self, files):
+        # Store to a zip files in files
+        self.log.debug('packing document')
+        zip_file = io.BytesIO()
 
-        # Save rendered content and headers
-        self.rendered = io.BytesIO()
-        self.log.debug('Packing document...')
-        with zipfile.ZipFile(self.rendered, 'a') as packed_template:
-            for filename, content in self.file_list.items():
-                if filename in ['content.xml', 'styles.xml']:
-                    self.log.debug(
-                        'Trying to pack "%s" into archive and encoding it into ascii\n%s',
-                        filename, self.styles.toxml())
-                    content = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
-
+        with zipfile.ZipFile(zip_file, 'a') as zipdoc:
+            for fname, content in files.items():
                 if sys.version_info >= (2, 7):
-                    packed_template.writestr(filename, content, zipfile.ZIP_DEFLATED)
-                    self.log.debug('File "%s" packed into archive with ZIP_DEFLATED', filename)
+                    zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
                 else:
-                    packed_template.writestr(filename, content)
-                    self.log.debug('File "%s" packed into archive', filename)
+                    zipdoc.writestr(fname, content)
+
+        self.log.debug('Document packing completed')
+
+        return zip_file
+
+    def _prepare_template_tags(self, xml_document):
+        # Here we search for every field node present in xml_document.
+        # For each field we found we do:
+        # * if field is a print field ({{ field }}), we replace it with a
+        #   <text:span> node.
+        # 
+        # * if field is a control flow ({% %}), then we find immediate node of
+        #   type indicated in field's `text:description` attribute and replace
+        #   the whole node and its childrens with field's content.
+        # 
+        #   If `text:description` attribute starts with `before::` or `after::`,
+        #   then we move field content before or after the node in description.
+        # 
+        #   If no `text:description` is available, find the immediate common
+        #   parent of this and any other field and replace its child and 
+        #   original parent of field with the field content.
+        # 
+        #   e.g.: original
+        #   <table>
+        #       <table:row>
+        #           <field>{% for bar in bars %}</field>
+        #       </table:row>
+        #       <paragraph>
+        #           <field>{{ bar }}</field>
+        #       </paragraph>
+        #       <table:row>
+        #           <field>{% endfor %}</field>
+        #       </table:row>
+        #   </table>
+        #   
+        #   After processing:
+        #   <table>
+        #       {% for bar in bars %}
+        #       <paragraph>
+        #           <text:span>{{ bar }}</text:span>
+        #       </paragraph>
+        #       {% endfor %}
+        #   </table>
+
+        self.log.debug('Preparing template tags')
+        fields = xml_document.getElementsByTagName('text:text-input')
+
+        # First, count secretary fields
+        for field in fields:
+            if not field.hasChildNodes():
+                continue
+
+            field_content = field.childNodes[0].data.strip()
+
+            if not re.findall(r'^{[{|%].*[%|}]}$', field_content, re.DOTALL):
+                # Field does not contains jinja template tags
+                continue
+
+            is_block_tag = re.findall(r'^{%[^{}]*%}$', field_content, re.DOTALL)
+            self.inc_node_fields_count(field.parentNode,
+                    'block' if is_block_tag else 'variable')
+
+        # Do field replacement and moving
+        for field in fields:
+            if not field.hasChildNodes():
+                continue
+
+            field_content = field.childNodes[0].data.strip()
+
+            if not re.findall(r'^{[{|%].*[%|}]}$', field_content, re.DOTALL):
+                # Field does not contains jinja template tags
+                continue
+
+            is_block_tag = re.findall(r'^{%[^{}]*%}$', field_content, re.DOTALL)
+            discard = field
+            field_reference = field.getAttribute('text:description').strip().lower()
+
+            if re.findall(r'\|markdown', field_content):
+                # a markdown field should take the whole paragraph
+                field_reference = 'text:p'
+
+            if field_reference:
+                # User especified a reference. Replace immediate parent node
+                # of type indicated in reference with this field's content.
+                node_type = FLOW_REFERENCES.get(field_reference, False)
+                if node_type:
+                    discard = self._parent_of_type(field, node_type)
+
+                jinja_node = self.create_text_node(xml_document, field_content)
+
+            elif is_block_tag:
+                # Find the common immediate parent of this and any other field.
+                while discard.parentNode.secretary_field_count <= 1:
+                    discard = discard.parentNode
+
+                if discard is not None:
+                    jinja_node = self.create_text_node(xml_document,
+                                                       field_content)
+
+            else:
+                jinja_node = self.create_text_span_node(xml_document,
+                                                        field_content)
+
+            parent = discard.parentNode
+            if not field_reference.startswith('after::'):
+                parent.insertBefore(jinja_node, discard)
+            else:
+                if discard.isSameNode(parent.lastChild):
+                    parent.appendChild(jinja_node)
+                else:
+                    parent.insertBefore(jinja_node,
+                                        discard.nextSibling)
+
+            if field_reference.startswith(('after::', 'before::')):
+                # Do not remove whole field container. Just remove the
+                # <text:text-input> parent node if field has it.
+                discard = self._parent_of_type(field, 'text:p')
+                parent = discard.parentNode
+
+            parent.removeChild(discard)
 
 
+    def _unescape_entities(self, xml_text):
+        # unescape XML entities gt and lt
+        unescape_rules = {
+            r'({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
+            r'({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
+        }
+
+        for p, r in unescape_rules.iteritems():
+            xml_text = re.sub(p, r, xml_text, flags=re.IGNORECASE or re.DOTALL)
+
+        return xml_text
+
+    def _encode_escape_chars(self, xml_text):
+        encode_rules = {
+            r'(<text:([ahp]|ruby-base|span|meta|meta-field)>.*)(\\n)(.*</text:([ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
+            r'(<text:([ahp]|ruby-base|span|meta|meta-field)>.*)(\\n)(.*</text:([ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
+            r'(<text:([ahp]|ruby-base|span|meta|meta-field)>.*)(\\n)(.*</text:([ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
+            ur'[\u0009|\u000d|\u000a]': r'<text:s/>'
+        }
+
+        for p, r in encode_rules.iteritems():
+            xml_text = re.sub(p, r, xml_text, flags=re.IGNORECASE)
+
+        return xml_text
+        
+
+    def _render_xml(self, xml_document, **kwargs):
+        # Prepare the xml object to be processed by jinja2
+        self.log.debug('Rendering XML object')
+
+        try:
+            self._prepare_template_tags(xml_document)
+            template_string = self._unescape_entities(xml_document.toxml())
+            jinja_template = self.environment.from_string(template_string)
+            result = jinja_template.render(**kwargs)
+            result = self._encode_escape_chars(result)
+
+            return parseString(result.encode('ascii', 'xmlcharrefreplace'))
+        
+        except:
+            self.log.debug('Error rendering template:\n%s', template_string)
+            raise
+
+        finally:
+            self.log.debug('Rendering xml object finished')
 
 
-    def render(self, **kwargs):
+    def render(self, template, **kwargs):
         """
-            Unpack and render the internal template and
-            returns the rendered ODF document.
+            Render a template
+
+            args:
+                template: A template file. Could be a string or a file instance
+                **kwargs: Template variables. Similar to jinja2
+
+            returns:
+                A binary stream which contains the rendered document.
         """
-        self.log.debug('render called with\n%s', kwargs)
-        def unescape_gt_lt(text):
-            # unescape XML entities gt and lt
-            unescape_entities = {
-                r'({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
-                r'({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
-            }
-            for pattern, repl in unescape_entities.iteritems():
-                text = re.sub(pattern, repl, text, flags=re.IGNORECASE or re.DOTALL)
 
-            self.log.debug('GT and LT tags successfully unescaped\n%s', text)
-            return text
+        self.log.debug('Initing a template rendering')
+        self.files = self._unpack_template(template)
 
-        self.unpack_template()
-
+        # Keep content and styles object since many functions or
+        # filters may work with then
+        self.content = parseString(self.files['content.xml']) 
+        self.styles = parseString(self.files['styles.xml'])
+        
         # Render content.xml
-        self.log.debug('Trying to render content.xml with jinja')
-        self.prepare_template_tags(self.content)
-        template = self.environment.from_string(unescape_gt_lt(self.content.toxml()))
-        result = template.render(**kwargs)
-        self.log.debug('Jinja2 successfully parsed content.xml')
-        result = result.replace('\n', '<text:line-break/>')
-        self.log.debug('Line breaks replaced successfully')
-
-        # Replace original body with rendered body
-        original_body = self.content.getElementsByTagName('office:body')[0]
-        rendered_body = parseString(result.encode('ascii', 'xmlcharrefreplace')).getElementsByTagName('office:body')[0]
-        self.log.debug(
-            'Replacing original document body with rendered version\n%s', result)
-
-        document = self.content.getElementsByTagName('office:document-content')[0]
-        document.replaceChild(rendered_body, original_body)
-        self.log.debug('Original body replaced with the rendered version')
+        self.content = self._render_xml(self.content, **kwargs)
 
         # Render styles.xml
-        self.log.debug('Trying to render styles.xml with jinja')
-        self.prepare_template_tags(self.styles)
-        template = self.environment.from_string(unescape_gt_lt(self.styles.toxml()))
-        result = template.render(**kwargs)
-        self.log.debug('Jinja2 successfully parsed styles.xml')
-        result = result.replace('\n', '<text:line-break/>')
-        self.log.debug('Lines break successfully encoded to <text:linebreaks>.')
-        self.log.debug('Now replacing template styles.xml with the rendered version')
-        self.styles = parseString(result.encode('ascii', 'xmlcharrefreplace'))
-        self.log.debug('New styles.xml file successfully parsed')
+        self.styles = self._render_xml(self.styles, **kwargs)
 
-        self.pack_document()
-        return self.rendered.getvalue()
+        self.log.debug('Template rendering finished')
+
+        self.files['content.xml'] = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
+        self.files['styles.xml'] = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
+        document = self._pack_document(self.files)
+        return document.getvalue()
 
 
-    def node_parents(self, node, parent_type):
-        """
-            Returns the first node's parent with name  of parent_type
-            If parent "text:p" is not found, returns None.
-        """
+    def _parent_of_type(self, node, of_type):
+        # Returns the first immediate parent of type `of_type`.
+        # Returns None if nothing is found.
 
         if hasattr(node, 'parentNode'):
-            if node.parentNode.nodeName.lower() == parent_type:
+            if node.parentNode.nodeName.lower() == of_type:
                 return node.parentNode
             else:
-                return self.node_parents(node.parentNode, parent_type)
+                return self._parent_of_type(node.parentNode, of_type)
         else:
             return None
 
@@ -269,83 +397,7 @@ class Renderer(object):
 
         self.inc_node_fields_count(node.parentNode, field_type)
 
-    def prepare_template_tags(self, xml_document):
-        """
-            Search every field node in the inner template and
-            replace them with a <text:span> field. Flow tags are
-            replaced with a blank node and moved into the ancestor
-            tag defined in description field attribute.
-        """
-        self.log.debug('Preparing template tags\n%s', xml_document.toxml())
-        fields = xml_document.getElementsByTagName('text:text-input')
-
-        # First, count secretary fields
-        for field in fields:
-            if not field.hasChildNodes():
-                continue
-
-            field_content = field.childNodes[0].data.replace('\n', '')
-
-            if not re.findall(r'(\{.*?\}*})', field_content):
-                # Field does not contains jinja template tags
-                continue
-
-            is_block_tag = re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip())
-            self.inc_node_fields_count(field.parentNode,
-                                       'variable' if not is_block_tag else 'block')
-
-        for field in fields:
-            if field.hasChildNodes():
-                field_content = field.childNodes[0].data.replace('\n', '')
-
-                if not re.findall(r'(\{.*?\}*})', field_content):
-                    # Field does not contains jinja template tags
-                    continue
-
-                is_block_tag = re.findall(r'(^\{\%.*?\%\}*})$', field_content.strip())
-                keep_field = field
-                field_reference = field.getAttribute('text:description')
-
-                if re.findall(r'\|markdown', field_content):
-                    # a markdown field should take the whole paragraph
-                    field_reference = 'text:p'
-
-                if not field_reference:
-                    if is_block_tag:
-                        # Find the node where this control flow field we
-                        # consider will be really needed.
-                        while field.parentNode.secretary_field_count  <= 1:
-                            field = field.parentNode
-
-                        if field is not None:
-                            jinja_tag_node = self.create_text_node(xml_document, field_content)
-                    else:
-                        jinja_tag_node = self.create_text_span_node(xml_document, field_content)
-                else:
-                    odt_reference = FLOW_REFERENCES.get(field_reference.strip(), field_reference)
-                    if odt_reference in SUPPORTED_FIELD_REFERECES:
-                        field = self.node_parents(field, odt_reference)
-
-                    jinja_tag_node = self.create_text_node(xml_document, field_content)
-
-                parent = field.parentNode
-
-                if not field_reference.startswith('after::'):
-                    parent.insertBefore(jinja_tag_node, field)
-                else:
-                    if field.isSameNode(parent.lastChild):
-                        parent.appendChild(jinja_tag_node)
-                    else:
-                        parent.insertBefore(jinja_tag_node, field.nextSibling)
-
-                if field_reference.startswith('after::') or field_reference.startswith('before::'):
-                    # Avoid removing whole container, just original text:p parent
-                    field = self.node_parents(keep_field, 'text:p')
-                    parent = field.parentNode
-
-                parent.removeChild(field)
-
-
+    
     def get_style_by_name(self, style_name):
         """
             Search in <office:automatic-styles> for style_name.
@@ -353,7 +405,8 @@ class Renderer(object):
             return the style node
         """
 
-        auto_styles = self.content.getElementsByTagName('office:automatic-styles')[0]
+        auto_styles = self.content.getElementsByTagName(
+            'office:automatic-styles')[0]
 
         if not auto_styles.hasChildNodes():
             return None
@@ -503,8 +556,8 @@ if __name__ == "__main__":
         {'country': 'Mexico', 'capital': 'MExico City', 'cities': ['puebla', 'cancun']},
     ]
 
-    render = Renderer('simple_template.odt')
-    result = render.render(countries=countries, document=document)
+    render = Renderer()
+    result = render.render('simple_template.odt', countries=countries, document=document)
 
     output = open('rendered.odt', 'wb')
     output.write(result)
