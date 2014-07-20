@@ -71,8 +71,6 @@ FLOW_REFERENCES = {
     'after::cell'        : 'table:table-cell',
 }
 
-SUPPORTED_FIELD_REFERECES = ['text:p', 'table:table-row', 'table:table-cell']
-
 # ---- Exceptions
 class SecretaryError(Exception):
     pass
