@@ -42,7 +42,6 @@ class RenderTestCase(TestCase):
 
     def test__encode_escape_chars(self):
         test_samples = {
-            # r'(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)
             '<text:a>\n</text:a>': '<text:a><text:line-break/></text:a>',
             '<text:h>\n</text:h>': '<text:h><text:line-break/></text:h>',
             '<text:p>\n</text:p>': '<text:p><text:line-break/></text:p>',
