@@ -28,6 +28,35 @@ class RenderTestCase(TestCase):
         self.engine = Renderer()
         self.engine.render(template)
 
+    def test__unescape_entities(self):
+        test_samples = {
+            '{{ "greater_than_1" if 1&gt;0 }}': '{{ "greater_than_1" if 1>0 }}',
+            '{{ "lower_than_1" if 1&lt;0 }}': '{{ "lower_than_1" if 1<0 }}',
+            '{{ if  <text:s> multiple_spaces }}': '{{ if    multiple_spaces }}',
+            '{{ if  </text:s> multiple_spaces }}': '{{ if    multiple_spaces }}',
+            '{{ if  <text:s/> multiple_spaces }}': '{{ if    multiple_spaces }}',
+        }
+
+        for test, expect in test_samples.iteritems():
+            assert self.engine._unescape_entities(test) == expect
+
+    def test__encode_escape_chars(self):
+        test_samples = {
+            # r'(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)
+            '<text:a>\n</text:a>': '<text:a><text:line-break/></text:a>',
+            '<text:h>\n</text:h>': '<text:h><text:line-break/></text:h>',
+            '<text:p>\n</text:p>': '<text:p><text:line-break/></text:p>',
+            '<text:ruby-base>\n</text:ruby-base>': '<text:ruby-base><text:line-break/></text:ruby-base>',
+            '<text:meta>\u0009</text:meta>': '<text:meta><text:tab></text:meta>',
+            '<text:meta-field>\n</text:meta-field>': '<text:meta-field><text:line-break/></text:meta-field>',
+            '\u0009': '<text:s/>',
+            '\u000d': '<text:s/>',
+            '\u000a': '<text:s/>',
+        }
+
+        for test, expect in test_samples.iteritems():
+            assert self.engine._encode_escape_chars(test) == expect
+
     def test_create_test_node(self):
         assert self.engine.create_text_node(self.document, 'text').toxml() == 'text'
 
