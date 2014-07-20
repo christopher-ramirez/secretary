@@ -307,7 +307,8 @@ class Renderer(object):
             return parseString(result.encode('ascii', 'xmlcharrefreplace'))
         
         except:
-            self.log.debug('Error rendering template:\n%s', template_string)
+            self.log.debug('Error rendering template:\n%s',
+                           xml_document.toprettyxml())
             raise
 
         finally:
