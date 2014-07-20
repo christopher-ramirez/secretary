@@ -140,11 +140,11 @@ class Renderer(object):
         zip_file = io.BytesIO()
 
         zipdoc = zipfile.ZipFile(zip_file, 'a')
-            for fname, content in files.items():
-                if sys.version_info >= (2, 7):
-                    zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
-                else:
-                    zipdoc.writestr(fname, content)
+        for fname, content in files.items():
+            if sys.version_info >= (2, 7):
+                zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
+            else:
+                zipdoc.writestr(fname, content)
 
         self.log.debug('Document packing completed')
 
