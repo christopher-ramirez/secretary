@@ -17,24 +17,24 @@ Rendered documents are produced in ODT format, and can then be converted to PDF,
 
     from secreatary import Render
 
-    engine = Render(template)
-    result = engine.render(foo=foo, bar=bar)
+    engine = Renderer()
+    result = engine.render(template, foo=foo, bar=bar)
 
-Secretary implements a class called `Render`. `Render` takes a single argument called `template` which is a template file. `template` can be a filename or a file object.
+Secretary implements a class called `Renderer`. `Renderer` takes a single argument called `environment` which is a jinja **[Environment][3]**.
 
-To render a template create an instance of class `Render` and call the instance's method `render` passing the template variables as keyword arguments. `render` will return the rendered document in binary format.
+To render a template create an instance of class `Renderer` and call the instance's method `render` passing a template file and template's variables as keyword arguments. `template` can be a filename or a file object. `render` will return the rendered document in binary format.
 
-Before rendering a template, you can configure the internal templating engine using the `Render` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
+Before rendering a template, you can configure the internal templating engine using the `Renderer` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
 
-    from secreatary import Render
+    from secreatary import Renderer
 
-    engine = Render(template)
+    engine = Renderer()
 
     # Configure custom application filters
     engine.environment.filters['custom_filer'] = filter_function
-    result = engine.render(foo=foo, bar=bar)
+    result = engine.render(template, foo=foo, bar=bar)
 
-    output = open('rendered_document.odt', 'w')
+    output = open('rendered_document.odt', 'wb')
     output.write(result)
 
 ## Composing Templates
