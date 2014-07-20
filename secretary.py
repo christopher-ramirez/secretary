@@ -22,9 +22,14 @@ import re
 import sys
 import logging
 import zipfile
-from collections import OrderedDict
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    # Its python 2.6
+    pass
 
 # Test python versions and normalize calls to basestring, unicode, etc.
 try:
@@ -305,7 +310,7 @@ class Renderer(object):
     def _encode_escape_chars(self, xml_text):
         if sys.version_info >= (2, 7):
             encode_rules = OrderedDict()
-            
+
         encode_rules = {
             '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
             '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
