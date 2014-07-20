@@ -22,7 +22,6 @@ import re
 import sys
 import logging
 import zipfile
-from collections import OrderedDict
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
@@ -286,9 +285,6 @@ class Renderer(object):
 
     def _unescape_entities(self, xml_text):
         # unescape XML entities gt and lt
-        if sys.version_info >= (2, 7):
-            unescape_rules = OrderedDict()
-
         unescape_rules = {
             r'(?is)({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
             r'(?is)({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
@@ -301,9 +297,6 @@ class Renderer(object):
         return xml_text
 
     def _encode_escape_chars(self, xml_text):
-        if sys.version_info >= (2, 7):
-            encode_rules = OrderedDict()
-            
         encode_rules = {
             '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
             '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
