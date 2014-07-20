@@ -272,6 +272,7 @@ class Renderer(object):
         unescape_rules = {
             r'({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
             r'({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
+            r'({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3',
         }
 
         for p, r in unescape_rules.iteritems():
