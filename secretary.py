@@ -282,9 +282,9 @@ class Renderer(object):
 
     def _encode_escape_chars(self, xml_text):
         encode_rules = {
-            r'(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
-            ur'(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
-            ur'[\u0009|\u000d|\u000a]': r'<text:s/>'
+            '(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
+            '(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
+            '[\u0009|\u000d|\u000a]': r'<text:s/>'
         }
 
         for p, r in encode_rules.iteritems():
