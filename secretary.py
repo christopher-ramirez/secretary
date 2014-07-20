@@ -15,6 +15,8 @@ Secretary
         result = engine.render(template_var1=...)
 """
 
+from __future__ import unicode_literals, print_function
+
 import io
 import re
 import sys
@@ -22,7 +24,6 @@ import logging
 import zipfile
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
-from __future__ import unicode_literals, print_function
 
 # Test python versions and normalize calls to basestring, unicode, etc.
 try:
