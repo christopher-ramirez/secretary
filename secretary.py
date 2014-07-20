@@ -312,7 +312,7 @@ class Renderer(object):
         encode_rules = {
             '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
             '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
-            '(?i)[\u0009|\u000d|\u000a]': r'<text:s/>'
+            '(?i)[\u0009|\u000d|\u000a](?:(?![</?|>]))': '<text:s/>'
         }
 
         for p, r in encode_rules.items():
