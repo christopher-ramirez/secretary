@@ -37,7 +37,7 @@ class RenderTestCase(TestCase):
             '{{ if  <text:s/> multiple_spaces }}': '{{ if    multiple_spaces }}',
         }
 
-        for test, expect in test_samples.iteritems():
+        for test, expect in test_samples.items():
             assert self.engine._unescape_entities(test) == expect
 
     def test__encode_escape_chars(self):
@@ -54,7 +54,7 @@ class RenderTestCase(TestCase):
             '\u000a': '<text:s/>',
         }
 
-        for test, expect in test_samples.iteritems():
+        for test, expect in test_samples.items():
             assert self.engine._encode_escape_chars(test) == expect
 
     def test_create_test_node(self):
