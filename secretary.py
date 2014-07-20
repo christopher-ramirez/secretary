@@ -199,11 +199,11 @@ class Renderer(object):
 
             field_content = field.childNodes[0].data.strip()
 
-            if not re.findall(r'^{[{|%].*[%|}]}$', field_content, re.DOTALL):
+            if not re.findall(r'(?is)^{[{|%].*[%|}]}$', field_content):
                 # Field does not contains jinja template tags
                 continue
 
-            is_block_tag = re.findall(r'^{%[^{}]*%}$', field_content, re.DOTALL)
+            is_block_tag = re.findall(r'(?is)^{%[^{}]*%}$', field_content)
             self.inc_node_fields_count(field.parentNode,
                     'block' if is_block_tag else 'variable')
 
@@ -214,11 +214,11 @@ class Renderer(object):
 
             field_content = field.childNodes[0].data.strip()
 
-            if not re.findall(r'^{[{|%].*[%|}]}$', field_content, re.DOTALL):
+            if not re.findall(r'(?is)^{[{|%].*[%|}]}$', field_content):
                 # Field does not contains jinja template tags
                 continue
 
-            is_block_tag = re.findall(r'^{%[^{}]*%}$', field_content, re.DOTALL)
+            is_block_tag = re.findall(r'(?is)^{%[^{}]*%}$', field_content)
             discard = field
             field_reference = field.getAttribute('text:description').strip().lower()
 
@@ -270,25 +270,25 @@ class Renderer(object):
     def _unescape_entities(self, xml_text):
         # unescape XML entities gt and lt
         unescape_rules = {
-            r'({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
-            r'({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
-            r'({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3',
+            r'(?is)({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
+            r'(?is)({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
+            r'(?is)({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3',
         }
 
         for p, r in unescape_rules.items():
-            xml_text = re.sub(p, r, xml_text, flags=re.IGNORECASE or re.DOTALL)
+            xml_text = re.sub(p, r, xml_text)
 
         return xml_text
 
     def _encode_escape_chars(self, xml_text):
         encode_rules = {
-            '(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
-            '(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
-            '[\u0009|\u000d|\u000a]': r'<text:s/>'
+            '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
+            '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
+            '(?i)[\u0009|\u000d|\u000a]': r'<text:s/>'
         }
 
         for p, r in encode_rules.items():
-            xml_text = re.sub(p, r, xml_text, flags=re.IGNORECASE)
+            xml_text = re.sub(p, r, xml_text)
 
         return xml_text
         
