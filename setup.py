@@ -24,9 +24,9 @@ class PyTest(TestCommand):
 
 setup(
     name='secretary',
-    version='0.1.0',
+    version='0.2.0',
     url='https://github.com/christopher-ramirez/secretary',
-    license='BSD',
+    license='MIT',
     author='Christopher Ramírez',
     author_email='chris.ramirezg@gmail.com',
     description=('Take the power of Jinja2 templates to OpenOffice and '
