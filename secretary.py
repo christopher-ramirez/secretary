@@ -275,7 +275,7 @@ class Renderer(object):
             r'({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3',
         }
 
-        for p, r in unescape_rules.iteritems():
+        for p, r in unescape_rules.items():
             xml_text = re.sub(p, r, xml_text, flags=re.IGNORECASE or re.DOTALL)
 
         return xml_text
@@ -287,7 +287,7 @@ class Renderer(object):
             '[\u0009|\u000d|\u000a]': r'<text:s/>'
         }
 
-        for p, r in encode_rules.iteritems():
+        for p, r in encode_rules.items():
             xml_text = re.sub(p, r, xml_text, flags=re.IGNORECASE)
 
         return xml_text
@@ -434,12 +434,12 @@ class Renderer(object):
         style_node.setAttribute('style:parent-style-name', 'Standard')
 
         if attributes:
-            for k, v in attributes.iteritems():
+            for k, v in attributes.items():
                 style_node.setAttribute('style:%s' % k, v)
 
         if style_properties:
             style_prop = self.content.createElement('style:text-properties')
-            for k, v in style_properties.iteritems():
+            for k, v in style_properties.items():
                 style_prop.setAttribute('%s' % k, v)
 
             style_node.appendChild(style_prop)
@@ -482,12 +482,12 @@ class Renderer(object):
 
                 # Add style-attributes defined in transform_map
                 if 'style_attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['style_attributes'].iteritems():
+                    for k, v in transform_map[tag]['style_attributes'].items():
                         odt_node.setAttribute('text:%s' % k, v)
 
                 # Add defined attributes
                 if 'attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['attributes'].iteritems():
+                    for k, v in transform_map[tag]['attributes'].items():
                         odt_node.setAttribute(k, v)
 
                     # copy original href attribute in <a> tag
