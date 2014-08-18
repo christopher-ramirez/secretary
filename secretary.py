@@ -297,14 +297,13 @@ class Renderer(object):
         return xml_text
 
     def _encode_escape_chars(self, xml_text):
-        encode_rules = {
-            '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\n)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:line-break/>\3',
-            '(?i)(<text:(?:[ahp]|ruby-base|span|meta|meta-field)>.*)(\u0009)(.*</text:(?:[ahp]|ruby-base|span|meta|meta-field)>)': r'\1<text:tab>\3',
-            '(?i)[\u0009|\u000d|\u000a](?:(?![</?|>]))': '<text:s/>'
-        }
-
-        for p, r in encode_rules.items():
-            xml_text = re.sub(p, r, xml_text)
+        # Replace line feed and/or tabs within text span entities.
+        find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t])[^<]*?)</text:\1>'
+        for m in re.findall(find_pattern, xml_text):
+            print(m[1])
+            replacement = m[1].replace('\n', '<text:line-break/>')
+            replacement = replacement.replace('\t', '<text:tab/>')
+            xml_text = xml_text.replace(m[1], replacement)
 
         return xml_text
         
@@ -320,13 +319,17 @@ class Renderer(object):
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
 
-            return parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            try:
+                return parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            except:
+                self.log.error('Error parsing XML result:\n%s', result,
+                               exc_info=True)
+                raise
         
         except:
-            self.log.debug('Error rendering template:\n%s',
-                           xml_document.toprettyxml())
+            self.log.error('Error rendering template:\n%s',
+                           xml_document.toprettyxml(), exc_info=True)
             raise
-
         finally:
             self.log.debug('Rendering xml object finished')
 
