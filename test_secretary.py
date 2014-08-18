@@ -45,12 +45,11 @@ class RenderTestCase(TestCase):
             '<text:a>\n</text:a>': '<text:a><text:line-break/></text:a>',
             '<text:h>\n</text:h>': '<text:h><text:line-break/></text:h>',
             '<text:p>\n</text:p>': '<text:p><text:line-break/></text:p>',
+            '<text:p>Hello\n</text:p>': '<text:p>Hello<text:line-break/></text:p>',
+            '<text:p>Hello\nWorld\n!</text:p>': '<text:p>Hello<text:line-break/>World<text:line-break/>!</text:p>',
             '<text:ruby-base>\n</text:ruby-base>': '<text:ruby-base><text:line-break/></text:ruby-base>',
-            '<text:meta>\u0009</text:meta>': '<text:meta><text:tab></text:meta>',
+            '<text:meta>\u0009</text:meta>': '<text:meta><text:tab/></text:meta>',
             '<text:meta-field>\n</text:meta-field>': '<text:meta-field><text:line-break/></text:meta-field>',
-            '\u0009': '<text:s/>',
-            '\u000d': '<text:s/>',
-            '\u000a': '<text:s/>',
         }
 
         for test, expect in test_samples.items():
