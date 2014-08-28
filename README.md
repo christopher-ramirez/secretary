@@ -55,7 +55,11 @@ Secretary will handle multiline variable values replacing the line breaks with a
 ### Inserting Images
 
 Images are currently only supported using a relative width of 80% to the enclosing frame. They can be considered in test-mode. Rendering them might change in future revisions.
-To test image rendering, note down the path of the absolute or relative path of the image. In this example, we consider it as foo.image. To insert it into the document, create (for example) a table-cell with a fixed width and then put an input-field with the content: {{ foo.image|image }}. It is then inserted into the table-cell.
+To test image rendering, note down the path of the absolute or relative path of the image. In this example, we consider it as foo.image. To insert it into the document, create (for example) a table-cell with a fixed width and then put an input-field with the content: 
+
+    {{ foo.image|image }}
+
+It is then inserted into the table-cell.
 
 ### Control Flow
 
