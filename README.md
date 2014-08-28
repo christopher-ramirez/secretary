@@ -54,12 +54,12 @@ Secretary will handle multiline variable values replacing the line breaks with a
 
 ### Inserting Images
 
-Images are currently only supported using a relative width of 80% to the enclosing frame. They can be considered in test-mode. Rendering them might change in future revisions.
+Images are currently only supported using a relative width of 100% to the enclosing frame. They can be considered in test-mode. Rendering them might change in future revisions.
 To test image rendering, note down the path of the absolute or relative path of the image. In this example, we consider it as foo.image. To insert it into the document, create (for example) a table-cell with a fixed width and then put an input-field with the content: 
 
     {{ foo.image|image }}
 
-It is then inserted into the table-cell.
+It is then inserted into the table-cell. Presumely due to a bug in Libreoffice: https://www.libreoffice.org/bugzilla/show_bug.cgi?id=45884 the images are sometimes correctly scaled, sometimes they come out in a 1:1 ratio.
 
 ### Control Flow
 
