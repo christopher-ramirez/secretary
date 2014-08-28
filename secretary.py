@@ -436,16 +436,12 @@ class Renderer(object):
 
         image_frame = xml_document.createElement('draw:frame')
         image_frame.setAttribute('draw:style-name', 'fr1')
-        #image_frame.setAttribute('text:anchor-type', 'paragraph')
         image_frame.setAttribute('text:anchor-type', 'as-char')
-        image_frame.setAttribute('style:rel-height', 'scale')
-        image_frame.setAttribute('style:rel-width', '80%')
+        image_frame.setAttribute('style:rel-width', '100%')
 
-        ##image_frame.setAttribute('svg:width', '5.778in')
-        #image_frame.setAttribute('svg:height', '3.5071in')
-        #image_frame.setAttribute('draw:z-index', '0')
-        #optional arguments, currently trying to avoid them:
-        #svg:width="5.778in" svg:height="3.5071in" draw:z-index="0"
+        #Currently there are scaling Issues in Libreoffice, which lead to width == height
+        #Bug Report is here: https://www.libreoffice.org/bugzilla/show_bug.cgi?id=45884
+        image_frame.setAttribute('style:rel-height', 'scale')
 
         img_node = xml_document.createElement('draw:image')
         img_node.setAttribute('xlink:href',url)
@@ -655,7 +651,8 @@ if __name__ == "__main__":
 
     document = {
         'datetime': datetime.now(),
-        'md_sample': read('README.md')
+        'md_sample': read('README.md'),
+        'image': 'image_test.png'
     }
 
     countries = [
