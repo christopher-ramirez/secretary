@@ -52,6 +52,15 @@ However, mixing template instructions and normal text into the template document
 
 Secretary will handle multiline variable values replacing the line breaks with a `<text:line-break/>` tag.
 
+### Inserting Images
+
+Images are currently only supported using a relative width of 100% to the enclosing frame. They can be considered in test-mode. Rendering them might change in future revisions.
+To test image rendering, note down the path of the absolute or relative path of the image. In this example, we consider it as foo.image. To insert it into the document, create (for example) a table-cell with a fixed width and then put an input-field with the content: 
+
+    {{ foo.image|image }}
+
+It is then inserted into the table-cell. Presumely due to a bug in Libreoffice: https://www.libreoffice.org/bugzilla/show_bug.cgi?id=45884 the images are sometimes correctly scaled, sometimes they come out in a 1:1 ratio.
+
 ### Control Flow
 
 Most of the time secretary will handle the internal composing of XML when you insert control flow tags (`{% for foo in foos %}`, `{% if bar %}`, etc and its enclosing tags. This is done by finding the present or absence of other secretary tags within the internal XML tree.
@@ -117,6 +126,8 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 
         {{ invoice.number|pad(6) }}
 
+- **image(url)**
+Instead of printing the value of the field, the url of the image is inserted into the OpenDocument document anchored `as-char`.
 
   [1]: http://jinja.pocoo.org/docs/templates/
   [2]: https://github.com/mirkonasato/pyodconverter

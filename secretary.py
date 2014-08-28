@@ -20,9 +20,11 @@ from __future__ import unicode_literals, print_function
 import io
 import re
 import sys
+import os
 import logging
 import zipfile
 from xml.dom.minidom import parseString
+import xml.dom
 from jinja2 import Environment, Undefined
 
 # Test python versions and normalize calls to basestring, unicode, etc.
@@ -92,7 +94,6 @@ def pad_string(value, length=5):
     value = str(value)
     return value.zfill(length)
 
-
 class Renderer(object):
     """
         Main engine to convert and ODT document into a jinja
@@ -125,6 +126,7 @@ class Renderer(object):
         """
         self.log = logging.getLogger(__name__)
         self.log.debug('Initing a Renderer instance\nTemplate')
+        self.extra_files=[]
 
         if environment:
             self.environment = environment
@@ -134,6 +136,7 @@ class Renderer(object):
             # Register filters
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
+            self.environment.filters['image'] = self.image_filter
 
     def _unpack_template(self, template):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
@@ -242,7 +245,10 @@ class Renderer(object):
                 # a markdown field should take the whole paragraph
                 field_reference = 'text:p'
 
-            if field_reference:
+            if re.findall(r'\|image', field_content):
+                jinja_node = self.create_img_node(xml_document,field_content)
+
+            elif field_reference:
                 # User especified a reference. Replace immediate parent node
                 # of type indicated in reference with this field's content.
                 node_type = FLOW_REFERENCES.get(field_reference, False)
@@ -334,6 +340,41 @@ class Renderer(object):
             self.log.debug('Rendering xml object finished')
 
 
+    def _render_manifest(self,xml_document,filenames):
+        manifest_parents = xml_document.getElementsByTagName('manifest:manifest')
+        if len(manifest_parents) != 1:
+            raise SecretaryError("Found malformed manifest file, more than one manifest parent found.")
+
+        manifest_parent = None
+        #Take first and only element (otherwise the code above would have thrown)
+        for m in manifest_parents:
+            manifest_parent = m
+            break
+
+        xml_tags = []
+        for child in manifest_parent.childNodes:
+            #Skip all text-nodes:
+            if child.nodeType == xml.dom.Node.TEXT_NODE:
+                continue
+            if child.tagName == 'manifest:file-entry':
+                xml_tags.append(child.getAttribute('manifest:full-path'))
+
+        for filename,mimetype in self.extra_files:
+            if filename in xml_tags:
+                #A file with the exact filename already exists and will be overwritten
+                continue
+            else:
+                #We have to prepare a new XML-entry for the file
+                #<manifest:file-entry manifest:full-path="Pictures/yourfile.png" manifest:media-type="image/png"/>
+                file_node = xml_document.createElement('manifest:file-entry')
+                file_node.setAttribute('manifest:full-path' ,filename)
+                file_node.setAttribute('manifest:media-type',mimetype)
+                manifest_parent.appendChild(file_node)
+
+        return parseString(xml_document.toprettyxml())
+
+
+
     def render(self, template, **kwargs):
         """
             Render a template
@@ -353,6 +394,7 @@ class Renderer(object):
         # filters may work with then
         self.content = parseString(self.files['content.xml']) 
         self.styles = parseString(self.files['styles.xml'])
+        self.manifest = parseString(self.files['META-INF/manifest.xml'])
         
         # Render content.xml
         self.content = self._render_xml(self.content, **kwargs)
@@ -364,6 +406,12 @@ class Renderer(object):
 
         self.files['content.xml'] = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
         self.files['styles.xml'] = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
+
+        # The Manifest does not contain any templates. The following function only inserts any extra files
+        # required by the template insertions (images i.e.)
+        self.manifest = self._render_manifest(self.manifest,self.files.keys())
+        self.files['META-INF/manifest.xml'] = self.manifest.toxml().encode('ascii','xmlcharrefreplace')
+
         document = self._pack_document(self.files)
         return document.getvalue()
 
@@ -379,6 +427,31 @@ class Renderer(object):
                 return self._parent_of_type(node.parentNode, of_type)
         else:
             return None
+
+    def create_img_node(self,xml_document,url):
+        """
+            Creates a new draw frame and draw image node.
+            Limitations: Sizing of the image is quite hard and should somehow be controlled.
+        """
+
+        image_frame = xml_document.createElement('draw:frame')
+        image_frame.setAttribute('draw:style-name', 'fr1')
+        image_frame.setAttribute('text:anchor-type', 'as-char')
+        image_frame.setAttribute('style:rel-width', '100%')
+
+        #Currently there are scaling Issues in Libreoffice, which lead to width == height
+        #Bug Report is here: https://www.libreoffice.org/bugzilla/show_bug.cgi?id=45884
+        image_frame.setAttribute('style:rel-height', 'scale')
+
+        img_node = xml_document.createElement('draw:image')
+        img_node.setAttribute('xlink:href',url)
+        img_node.setAttribute('xlink:type','simple')
+        img_node.setAttribute('xlink:show','embed')
+        img_node.setAttribute('xlink:actuate','onLoad')
+
+        image_frame.appendChild(img_node)
+
+        return image_frame
 
 
     def create_text_span_node(self, xml_document, content):
@@ -464,6 +537,21 @@ class Renderer(object):
             style_node.appendChild(style_prop)
 
         return auto_styles.appendChild(style_node)
+
+    def image_filter(self,image_url):
+        """
+            This filter has to take care of loading the image from disk to pack
+            it into the zip later, it also has to adjust the relative url of the xml.
+        """
+        # We need to store the picture in the zip - add it to the filelist and copy it.
+
+        data = None
+        with open(image_url,'r') as infile_img:
+            relative_url = "Pictures/%s" % os.path.basename(image_url)
+            self.files[relative_url] = infile_img.read()
+            self.extra_files.append((relative_url,'image/png'))
+
+        return relative_url
 
     def markdown_filter(self, markdown_text):
         """
@@ -563,7 +651,8 @@ if __name__ == "__main__":
 
     document = {
         'datetime': datetime.now(),
-        'md_sample': read('README.md')
+        'md_sample': read('README.md'),
+        'image': 'image_test.png'
     }
 
     countries = [
