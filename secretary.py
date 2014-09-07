@@ -135,7 +135,7 @@ class Renderer(object):
             # Register filters
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
-            self.environment.filters['image'] = image_filter
+            self.environment.filters['image'] = self.image_filter
 
     def _unpack_template(self, template):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
