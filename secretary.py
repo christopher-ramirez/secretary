@@ -22,6 +22,8 @@ import re
 import sys
 import logging
 import zipfile
+from os import path
+from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
@@ -89,10 +91,15 @@ class UndefinedSilently(Undefined):
 #
 # ************************************************
 
+def media_loader(f):
+    def wrapper(*args, **kwargs):
+        Renderer.__media_loader__ = f
+
+    return wrapper
+
 def pad_string(value, length=5):
     value = str(value)
     return value.zfill(length)
-
 
 class Renderer(object):
     """
@@ -111,7 +118,6 @@ class Renderer(object):
             engine.environment.filters['custom_filer'] = filter_function
             result = engine.render()
     """
-
 
     def __init__(self, environment=None, **kwargs):
         """
@@ -137,6 +143,21 @@ class Renderer(object):
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
 
+        self.media_path = kwargs.pop('media_path', '')
+        self.media_callback = self.fs_loader
+
+
+    def media_loader(self, callback):
+        """This sets the the media loader. A user defined function which
+        loads media. The function should take a template value, optionals
+        args and kwargs. Is media exists should return a tuple whose first
+        element if a file object type representing the media and its second
+        elements is the media mimetype.
+
+        See Renderer.fs_loader funcion for an example"""
+        self.media_callback = callback
+        return callback
+
     def _unpack_template(self, template):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
         # and return a dict with every file in the archive
@@ -150,7 +171,6 @@ class Renderer(object):
         return archive_files
 
         self.log.debug('Unpack completed')
-
 
     def _pack_document(self, files):
         # Store to a zip files in files
@@ -312,10 +332,105 @@ class Renderer(object):
         return xml_text
 
 
-    def replace_images(self, xml_documet):
+    def add_media_to_archive(self, media, mime, name=''):
+        """Adds to "Pictures" archive folder the file in `media` and register
+        it into manifest file."""
+        extension = None
+        if hasattr(media, 'name') and not name:
+            extension = path.splitext(media.name)
+            name      = extension[0]
+            extension = extension[1]
+
+        if not extension:
+            extension = guess_extension(mime)
+
+        media_path = 'Pictures/%s%s' % (name, extension)
+        self.files[media_path] = media.read(-1)
+        if hasattr(media, 'close'):
+            media.close()
+
+        files_node = self.manifest.getElementsByTagName('manifest:manifest')[0]
+        node = self.create_node(self.manifest, 'manifest:file-entry', files_node)
+        node.setAttribute('manifest:full-path', media_path)
+        node.setAttribute('manifest:media-type', mime)
+
+        return media_path
+
+
+    def fs_loader(self, media, *args, **kwargs):
+        """Loads a file from the file system.
+        :param media: relative or absolute path of file to load.
+        :type media: unicode
+        """
+        if path.isfile(media):
+            filename = media
+        else:
+            if not self.media_path:
+                self.log.debug('media_path property not specified to load images from.')
+                return
+
+            filename = path.join(self.media_path, media)
+            if not path.isfile(filename):
+                self.log.debug('Media file "%s" does not exists.' % filename)
+                return
+
+        mime = guess_type(filename)
+        return (open(filename, 'rb'), mime[0] if mime else None)
+
+
+    def replace_images(self, xml_document):
         """Perform images replacements"""
-        pass
-        
+        self.log.debug('Inserting images')
+        frames = xml_document.getElementsByTagName('draw:frame')
+
+        for frame in frames:
+            if not frame.hasChildNodes():
+                continue
+
+            key = frame.getAttribute('draw:name')
+            if key not in self.template_images:
+                continue
+
+            # Get frame attributes
+            frame_attrs = dict()
+            for i in xrange(frame.attributes.length):
+                attr = frame.attributes.item(i)
+                frame_attrs[attr.name] = attr.value 
+
+            # Get child draw:image node and its attrs
+            image_node = frame.childNodes[0]
+            image_attrs = dict()
+            for i in xrange(image_node.attributes.length):
+                attr = image_node.attributes.item(i)
+                image_attrs[attr.name] = attr.value 
+
+            # Request to media loader the image to use
+            image = self.media_callback(self.template_images[key]['value'],
+                                        *self.template_images[key]['args'],
+                                        frame_attrs=frame_attrs,
+                                        image_attrs=image_attrs,
+                                        **self.template_images[key]['kwargs'])
+
+            # Update frame and image node attrs (if they where updated in
+            # media_callback call)
+            for k, v in frame_attrs.items():
+                frame.setAttribute(k, v)
+                
+            for k, v in image_attrs.items():
+                image_node.setAttribute(k, v)
+
+            # Keep original image reference value
+            frame.setAttribute('draw:name',
+                               self.template_images[key]['value'])
+            
+            # Does the madia loader returned something?
+            if not image:
+                continue
+
+            mname = self.add_media_to_archive(media=image[0], mime=image[1],
+                                              name=key)
+            if mname:
+                image_node.setAttribute('xlink:href', mname)
 
     def _render_xml(self, xml_document, **kwargs):
         # Prepare the xml object to be processed by jinja2
@@ -333,7 +448,7 @@ class Renderer(object):
             if self.template_images:
                 self.replace_images(final_xml)
 
-            return parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            return final_xml
         
         except:
             self.log.debug('Error rendering template:\n%s',
@@ -362,8 +477,9 @@ class Renderer(object):
 
         # Keep content and styles object since many functions or
         # filters may work with then
-        self.content = parseString(self.files['content.xml']) 
-        self.styles = parseString(self.files['styles.xml'])
+        self.content  = parseString(self.files['content.xml']) 
+        self.styles   = parseString(self.files['styles.xml'])
+        self.manifest = parseString(self.files['META-INF/manifest.xml'])
         
         # Render content.xml
         self.content = self._render_xml(self.content, **kwargs)
@@ -373,8 +489,11 @@ class Renderer(object):
 
         self.log.debug('Template rendering finished')
 
-        self.files['content.xml'] = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
-        self.files['styles.xml'] = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
+        self.files['content.xml']           = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
+        self.files['styles.xml']            = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
+        self.files['META-INF/manifest.xml'] = self.manifest.toxml().encode('ascii', 'xmlcharrefreplace')
+        
+        document = self._pack_document(self.files)
         document = self._pack_document(self.files)
         return document.getvalue()
 
@@ -391,6 +510,14 @@ class Renderer(object):
         else:
             return None
 
+    def create_node(self, xml_document, node_type, parent=None):
+        """Creates a node in `xml_document` of type `node_type` and specified,
+        as child of `parent`."""
+        node = xml_document.createElement(node_type)
+        if parent:
+            parent.appendChild(node)
+
+        return node
 
     def create_text_span_node(self, xml_document, content):
         span = xml_document.createElement('text:span')
@@ -602,9 +729,9 @@ if __name__ == "__main__":
     ]
 
     render = Renderer()
-    result = render.render('samples/images.odt', image="images/a.jpg")
+    result = render.render('simple_template.odt', countries=countries, document=document)
 
-    output = open('samples/images.out.odt', 'wb')
+    output = open('rendered.odt', 'wb')
     output.write(result)
 
-    print("Template rendering finished! Check samples\images.out.odt file.")
+    print("Template rendering finished! Check rendered.odt file.")
