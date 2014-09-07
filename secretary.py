@@ -167,43 +167,44 @@ class Renderer(object):
         return zip_file
 
     def _prepare_template_tags(self, xml_document):
-        # Here we search for every field node present in xml_document.
-        # For each field we found we do:
-        # * if field is a print field ({{ field }}), we replace it with a
-        #   <text:span> node.
-        # 
-        # * if field is a control flow ({% %}), then we find immediate node of
-        #   type indicated in field's `text:description` attribute and replace
-        #   the whole node and its childrens with field's content.
-        # 
-        #   If `text:description` attribute starts with `before::` or `after::`,
-        #   then we move field content before or after the node in description.
-        # 
-        #   If no `text:description` is available, find the immediate common
-        #   parent of this and any other field and replace its child and 
-        #   original parent of field with the field content.
-        # 
-        #   e.g.: original
-        #   <table>
-        #       <table:row>
-        #           <field>{% for bar in bars %}</field>
-        #       </table:row>
-        #       <paragraph>
-        #           <field>{{ bar }}</field>
-        #       </paragraph>
-        #       <table:row>
-        #           <field>{% endfor %}</field>
-        #       </table:row>
-        #   </table>
-        #   
-        #   After processing:
-        #   <table>
-        #       {% for bar in bars %}
-        #       <paragraph>
-        #           <text:span>{{ bar }}</text:span>
-        #       </paragraph>
-        #       {% endfor %}
-        #   </table>
+        """ Here we search for every field node present in xml_document.
+        For each field we found we do:
+        * if field is a print field ({{ field }}), we replace it with a
+          <text:span> node.
+        
+        * if field is a control flow ({% %}), then we find immediate node of
+          type indicated in field's `text:description` attribute and replace
+          the whole node and its childrens with field's content.
+        
+          If `text:description` attribute starts with `before::` or `after::`,
+          then we move field content before or after the node in description.
+        
+          If no `text:description` is available, find the immediate common
+          parent of this and any other field and replace its child and 
+          original parent of field with the field content.
+        
+          e.g.: original
+          <table>
+              <table:row>
+                  <field>{% for bar in bars %}</field>
+              </table:row>
+              <paragraph>
+                  <field>{{ bar }}</field>
+              </paragraph>
+              <table:row>
+                  <field>{% endfor %}</field>
+              </table:row>
+          </table>
+          
+          After processing:
+          <table>
+              {% for bar in bars %}
+              <paragraph>
+                  <text:span>{{ bar }}</text:span>
+              </paragraph>
+              {% endfor %}
+          </table>
+        """
 
         self.log.debug('Preparing template tags')
         fields = xml_document.getElementsByTagName('text:text-input')
