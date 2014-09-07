@@ -22,6 +22,7 @@ import re
 import sys
 import logging
 import zipfile
+from uuid import uuid4
 from xml.dom.minidom import parseString
 from jinja2 import Environment, Undefined
 
@@ -134,6 +135,7 @@ class Renderer(object):
             # Register filters
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
+            self.environment.filters['image'] = image_filter
 
     def _unpack_template(self, template):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
@@ -346,6 +348,7 @@ class Renderer(object):
 
         self.log.debug('Initing a template rendering')
         self.files = self._unpack_template(template)
+        self.render_vars = {}
 
         # Keep content and styles object since many functions or
         # filters may work with then
@@ -542,6 +545,15 @@ class Renderer(object):
 
         return ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
+
+    def image_filter(self, value):
+        """Store value into render_vars and return the key name where this
+        method stored it. The value returned it later used to load the image
+        from media loader and finally inserted into the final ODT document."""
+        key = 'image_%s' % uuid4().hex
+        self.render_vars[key] = value
+        return key
+
 
 def render_template(template, **kwargs):
     """
