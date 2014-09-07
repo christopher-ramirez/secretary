@@ -104,8 +104,51 @@ Although most of the time the automatic handling of control flow in secretary ma
 ### Features of jinja2 not supported
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
+
+### Image Support
+**Feature under development**. Secretary allows you to use placeholder images which will be
+replaced when rendering the template. To create a placeholder image: in the template insert
+an image. Change the image's name* to a Jinja2 print tag (the ones with double curly braces)
+The variable should call the `image` filter, i.e.: `{{ client.picture|image }}`.
+
+* *Right click under image, select "Picture..." from the popup menu and navegate to
+"Options" tab.*
+
+#### Media loader
+To load image data, Secretary need a media loader. The engine by default provides a file system
+loader which takes the variable value (specified in image's name). This value is a relative file
+name to `media_path` passed at `Renderer` instance creation.
+
+Since the default media loader is very limited. Users can provide theirs own media loader to the
+`Renderer` intance. A media loader can perform image retrival and/or any required transformation
+of images. The media loader must take the image value from the template and return a tuple whose
+first item is a file like object containing the image. Its second element must be the image mimetype.
+
+Example declaring a media loader:
+``` python
+    from secreatary import Renderer
+
+    engine = Renderer()
+
+    @engine.media_loader
+    def db_medialoader(value, *args, *kwargs):
+        # load from images tables the image with `value` id.
+        ...
+
+    engine.render(template, **template_vars)
+```
+The media loader also receive any argument or keywork arguments declared in the template. i.e:
+If the placeholder image's name is: `{{ client.image|image('keep_ratio', tiny=True)}}` the media
+loader will receive: first the value of `client.image` as `value` argument; the string `keep_ratio` as an additional argument and `tiny` as a keyword argument.
+
+The loader can also access and update the internal `draw:frame` and `draw:image` nodes. The loader
+receives as a dictionary the attributes of these nodes through `frame_attrs` and `image_attrs` keyword arguments. Is some update is made to these dictionary secretary will update the internal nodes with the changes.
+
 ### Builtin Filters
 Secretary includes some predefined *jinja2* filters. Included filters are:
+
+- **image(value)**
+See *Image Support* section above.
 
 - **markdown(value)**
 Convert the value, a markdown formated string, into a ODT formated text. Example:
