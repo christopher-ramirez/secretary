@@ -556,12 +556,17 @@ class Renderer(object):
         return ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
 
-    def image_filter(self, value):
+    def image_filter(self, value, *args, **kwargs):
         """Store value into template_images and return the key name where this
         method stored it. The value returned it later used to load the image
         from media loader and finally inserted into the final ODT document."""
         key = uuid4().hex
-        self.template_images[key] = value
+        self.template_images[key] = {
+            'value': value,
+            'args': args,
+            'kwargs': kwargs
+        }
+
         return key
 
 
