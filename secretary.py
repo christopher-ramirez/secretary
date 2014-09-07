@@ -310,6 +310,11 @@ class Renderer(object):
             xml_text = re.sub(p, r, xml_text)
 
         return xml_text
+
+
+    def replace_images(self, xml_documet):
+        """Perform images replacements"""
+        pass
         
 
     def _render_xml(self, xml_document, **kwargs):
@@ -317,11 +322,16 @@ class Renderer(object):
         self.log.debug('Rendering XML object')
 
         try:
+            self.template_images = dict()
             self._prepare_template_tags(xml_document)
             template_string = self._unescape_entities(xml_document.toxml())
             jinja_template = self.environment.from_string(template_string)
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
+
+            final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            if self.template_images:
+                self.replace_images(final_xml)
 
             return parseString(result.encode('ascii', 'xmlcharrefreplace'))
         
@@ -547,11 +557,11 @@ class Renderer(object):
                 xml_object.getElementsByTagName('html')[0].childNodes))
 
     def image_filter(self, value):
-        """Store value into render_vars and return the key name where this
+        """Store value into template_images and return the key name where this
         method stored it. The value returned it later used to load the image
         from media loader and finally inserted into the final ODT document."""
-        key = 'image_%s' % uuid4().hex
-        self.render_vars[key] = value
+        key = uuid4().hex
+        self.template_images[key] = value
         return key
 
 
@@ -587,9 +597,9 @@ if __name__ == "__main__":
     ]
 
     render = Renderer()
-    result = render.render('simple_template.odt', countries=countries, document=document)
+    result = render.render('samples/images.odt', image="images/a.jpg")
 
-    output = open('rendered.odt', 'wb')
+    output = open('samples/images.out.odt', 'wb')
     output.write(result)
 
-    print("Template rendering finished! Check rendered.odt file.")
+    print("Template rendering finished! Check samples\images.out.odt file.")
