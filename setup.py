@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-import os
+
 import sys
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-# Utility function to read the README file.
-# Used for the long_description.  It's nice, because now
-#   1) we have a top level README file and
-#   2) it's easier to type in the README file than to put a raw string in below ...
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+long_description = """
+============
+Secretary
+============
+Take the power of Jinja2 templates to OpenOffice or LibreOffice and create reports and letters in your web applications.
+
+See full `documentation on Github <https://github.com/christopher-ramirez/secretary/blob/master/README.md>`_
+."""
 
 class PyTest(TestCommand):
     def finalize_options(self):
@@ -29,9 +31,8 @@ setup(
     license='MIT',
     author='Christopher Ramírez',
     author_email='chris.ramirezg@gmail.com',
-    description=('Take the power of Jinja2 templates to OpenOffice and '
-                 'LibreOffice and create reports and letters in your web applications'),
-    long_description=read('README.md'),
+    description='Take the power of Jinja2 templates to OpenOffice or LibreOffice.',
+    long_description=long_description,
     py_modules=['secretary', 'markdown_map'],
     platforms='any',
     install_requires=[
