@@ -101,28 +101,19 @@ Although most of the time the automatic handling of control flow in secretary ma
 * `after::cell`: Same as `after::row` but for a table cell.
 > Field content is the control flow tag you insert with the Writer *input field*
 
-### Features of jinja2 not supported
-Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
-
 
 ### Image Support
-**Feature under development**. Secretary allows you to use placeholder images which will be
-replaced when rendering the template. To create a placeholder image: in the template insert
-an image. Change the image's name* to a Jinja2 print tag (the ones with double curly braces)
-The variable should call the `image` filter, i.e.: `{{ client.picture|image }}`.
+Secretary allows you to use placeholder images in templates that will be replaced when rendering the final document. To create a placeholder image on your template:
 
-* *Right click under image, select "Picture..." from the popup menu and navegate to
-"Options" tab.*
+1. Insert an image into the document as normal. This image will be replaced when rendering the final document.
+2. Change the name of the recently added image to a Jinja2 print tag (the ones with double curly braces). The variable should call the `image` filter, i.e.: Suppose you have a client record (passed to template as `client` object), and a picture of him is stored in the `picture` field. To print the client's picture into a document set the image name to `{{ client.picture|image }}`.
+> To change image name, right click under image, select "Picture..." from the popup menu and navigate to
+"Options" tab.
 
 #### Media loader
-To load image data, Secretary need a media loader. The engine by default provides a file system
-loader which takes the variable value (specified in image's name). This value is a relative file
-name to `media_path` passed at `Renderer` instance creation.
+To load image data, Secretary need a media loader. The engine by default provides a file system loader which takes the variable value (specified in image name). This value can be a file object containing an image or an absolute or a relative filename to `media_path` passed at `Renderer` instance creation.
 
-Since the default media loader is very limited. Users can provide theirs own media loader to the
-`Renderer` intance. A media loader can perform image retrival and/or any required transformation
-of images. The media loader must take the image value from the template and return a tuple whose
-first item is a file like object containing the image. Its second element must be the image mimetype.
+Since the default media loader is very limited. Users can provide theirs own media loader to the `Renderer` instance. A media loader can perform image retrieval and/or any required transformation of images. The media loader must take the image value from the template and return a tuple whose first item is a file object containing the image. Its second element must be the image mimetype.
 
 Example declaring a media loader:
 ``` python
@@ -131,18 +122,17 @@ Example declaring a media loader:
     engine = Renderer()
 
     @engine.media_loader
-    def db_medialoader(value, *args, *kwargs):
-        # load from images tables the image with `value` id.
-        ...
+    def db_images_loader(value, *args, *kwargs):
+        # load from images collection the image with `value` id.
+        image = db.images.findOne({'_id': value})
+        
+        return (image, the_image_mimetype)
 
     engine.render(template, **template_vars)
 ```
-The media loader also receive any argument or keywork arguments declared in the template. i.e:
-If the placeholder image's name is: `{{ client.image|image('keep_ratio', tiny=True)}}` the media
-loader will receive: first the value of `client.image` as `value` argument; the string `keep_ratio` as an additional argument and `tiny` as a keyword argument.
+The media loader also receive any argument or keywork arguments declared in the template. i.e: If the placeholder image's name is: `{{ client.image|image('keep_ratio', tiny=True)}}` the media loader will receive: first the value of `client.image` as it first argument; the string `keep_ratio` as an additional argument and `tiny` as a keyword argument.
 
-The loader can also access and update the internal `draw:frame` and `draw:image` nodes. The loader
-receives as a dictionary the attributes of these nodes through `frame_attrs` and `image_attrs` keyword arguments. Is some update is made to these dictionary secretary will update the internal nodes with the changes.
+The loader can also access and update the internal `draw:frame` and `draw:image` nodes. The loader receives as a dictionary the attributes of these nodes through `frame_attrs` and `image_attrs` keyword arguments. Is some update is made to these dictionary secretary will update the internal nodes with the changes. This is useful when the placeholder's aspect radio and replacement image's aspect radio are different and you need to keep the aspect ratio of the original image.
 
 ### Builtin Filters
 Secretary includes some predefined *jinja2* filters. Included filters are:
@@ -159,6 +149,10 @@ Convert the value, a markdown formated string, into a ODT formated text. Example
 Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
 
         {{ invoice.number|pad(6) }}
+
+
+### Features of jinja2 not supported
+Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 
   [1]: http://jinja.pocoo.org/docs/templates/
