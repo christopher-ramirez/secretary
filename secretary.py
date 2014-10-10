@@ -345,6 +345,7 @@ class Renderer(object):
             extension = guess_extension(mime)
 
         media_path = 'Pictures/%s%s' % (name, extension)
+        media.seek(0)
         self.files[media_path] = media.read(-1)
         if hasattr(media, 'close'):
             media.close()
@@ -359,10 +360,12 @@ class Renderer(object):
 
     def fs_loader(self, media, *args, **kwargs):
         """Loads a file from the file system.
-        :param media: relative or absolute path of file to load.
+        :param media: A file object or a relative or absolute path of a file.
         :type media: unicode
         """
-        if path.isfile(media):
+        if hasattr(media, 'seek') and hasattr(media, 'read'):
+            return (media, 'image/jpeg')
+        elif path.isfile(media):
             filename = media
         else:
             if not self.media_path:
@@ -420,9 +423,10 @@ class Renderer(object):
                 image_node.setAttribute(k, v)
 
             # Keep original image reference value
-            frame.setAttribute('draw:name',
-                               self.template_images[key]['value'])
-            
+            if isinstance(self.template_images[key]['value'], basestring):
+                frame.setAttribute('draw:name',
+                                   self.template_images[key]['value'])
+
             # Does the madia loader returned something?
             if not image:
                 continue
