@@ -107,16 +107,17 @@ Secretary allows you to use placeholder images in templates that will be replace
 
 1. Insert an image into the document as normal. This image will be replaced when rendering the final document.
 2. Change the name of the recently added image to a Jinja2 print tag (the ones with double curly braces). The variable should call the `image` filter, i.e.: Suppose you have a client record (passed to template as `client` object), and a picture of him is stored in the `picture` field. To print the client's picture into a document set the image name to `{{ client.picture|image }}`.
+
 > To change image name, right click under image, select "Picture..." from the popup menu and navigate to
 "Options" tab.
 
 #### Media loader
-To load image data, Secretary need a media loader. The engine by default provides a file system loader which takes the variable value (specified in image name). This value can be a file object containing an image or an absolute or a relative filename to `media_path` passed at `Renderer` instance creation.
+To load image data, Secretary needs a media loader. The engine by default provides a file system loader which takes the variable value (specified in image name). This value can be a file object containing an image or an absolute or a relative filename to `media_path` passed at `Renderer` instance creation.
 
 Since the default media loader is very limited. Users can provide theirs own media loader to the `Renderer` instance. A media loader can perform image retrieval and/or any required transformation of images. The media loader must take the image value from the template and return a tuple whose first item is a file object containing the image. Its second element must be the image mimetype.
 
 Example declaring a media loader:
-``` python
+```python
     from secreatary import Renderer
 
     engine = Renderer()
@@ -153,6 +154,13 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 
 ### Features of jinja2 not supported
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
+
+### Version History
+* **0.2.2**: Introduce image support.
+* **0.2.1**: Fix issue [#8](https://github.com/christopher-ramirez/secretary/issues/8)
+* **0.2.0**: **Backward incompatible release**. Still compatible with existing templates. Introduce auto flow handling, better logging and minor bug fixes.
+* **0.1.1**: New markdown filter. Introduce new flow control aliases. Bug fixes.
+* **0.1.0**: Initial release.
 
 
   [1]: http://jinja.pocoo.org/docs/templates/
