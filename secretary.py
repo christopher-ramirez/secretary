@@ -452,7 +452,6 @@ class Renderer(object):
                 self.replace_images(final_xml)
 
             return final_xml
-        
         except:
             self.log.error('Error rendering template:\n%s',
                            xml_document.toprettyxml(), exc_info=True)
@@ -483,8 +482,12 @@ class Renderer(object):
         self.styles   = parseString(self.files['styles.xml'])
         self.manifest = parseString(self.files['META-INF/manifest.xml'])
         
-        # Render content.xml
-        self.content = self._render_xml(self.content, **kwargs)
+        # Render content.xml keeping just 'office:body' node.
+        rendered_content = self._render_xml(self.content, **kwargs)
+        self.content.getElementsByTagName('office:document-content')[0].replaceChild(
+            rendered_content.getElementsByTagName('office:body')[0],
+            self.content.getElementsByTagName('office:body')[0]
+        )
 
         # Render styles.xml
         self.styles = self._render_xml(self.styles, **kwargs)
