@@ -15,7 +15,7 @@ Rendered documents are produced in ODT format, and can then be converted to PDF,
 
 ## Rendering a Template
 
-    from secreatary import Render
+    from secretary import Renderer
 
     engine = Renderer()
     result = engine.render(template, foo=foo, bar=bar)
@@ -26,7 +26,7 @@ To render a template create an instance of class `Renderer` and call the instanc
 
 Before rendering a template, you can configure the internal templating engine using the `Renderer` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
 
-    from secreatary import Renderer
+    from secretary import Renderer
 
     engine = Renderer()
 
@@ -118,7 +118,7 @@ Since the default media loader is very limited. Users can provide theirs own med
 
 Example declaring a media loader:
 ```python
-    from secreatary import Renderer
+    from secretary import Renderer
 
     engine = Renderer()
 
