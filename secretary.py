@@ -306,20 +306,26 @@ class Renderer(object):
             parent.removeChild(discard)
 
 
-    def _unescape_entities(self, xml_text):
+    @staticmethod
+    def _unescape_entities(xml_text):
         # unescape XML entities gt and lt
         unescape_rules = {
             r'(?is)({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
             r'(?is)({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
-            r'(?is)({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3',
+            r'(?is)({[{|%].*)(&amp;)(.*[%|}]})': r'\1&\3',
+            r'(?is)({[{|%].*)(&quot;)(.*[%|}]})': r'\1"\3',
+            r'(?is)({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3'
         }
 
         for p, r in unescape_rules.items():
-            xml_text = re.sub(p, r, xml_text)
+            count = None
+            while count != 0:
+                xml_text, count = re.subn(p, r, xml_text)
 
         return xml_text
 
-    def _encode_escape_chars(self, xml_text):
+    @staticmethod
+    def _encode_escape_chars(xml_text):
         # Replace line feed and/or tabs within text span entities.
         find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t])[^<]*?)</text:\1>'
         for m in re.findall(find_pattern, xml_text):
@@ -441,10 +447,10 @@ class Renderer(object):
         try:
             self.template_images = dict()
             self._prepare_template_tags(xml_document)
-            template_string = self._unescape_entities(xml_document.toxml())
+            template_string = Renderer._unescape_entities(xml_document.toxml())
             jinja_template = self.environment.from_string(template_string)
             result = jinja_template.render(**kwargs)
-            result = self._encode_escape_chars(result)
+            result = Renderer._encode_escape_chars(result)
 
             final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
             if self.template_images:
