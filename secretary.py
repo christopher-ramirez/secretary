@@ -308,13 +308,17 @@ class Renderer(object):
 
     @staticmethod
     def _unescape_entities(xml_text):
-        # unescape XML entities gt and lt
+        """
+        Strips tags of the form <text:span ...> from inside Jinja elements
+        and unescapes HTML codes for >, <, & and "
+        """
         unescape_rules = {
+            r'(?is)({[{|%].*)(<.?text:s.*?>)(.*[%|}]})': r'\1\3',
+
             r'(?is)({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
             r'(?is)({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
             r'(?is)({[{|%].*)(&amp;)(.*[%|}]})': r'\1&\3',
-            r'(?is)({[{|%].*)(&quot;)(.*[%|}]})': r'\1"\3',
-            r'(?is)({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3'
+            r'(?is)({[{|%].*)(&quot;)(.*[%|}]})': r'\1"\3'
         }
 
         for p, r in unescape_rules.items():
@@ -449,6 +453,7 @@ class Renderer(object):
             self._prepare_template_tags(xml_document)
             template_string = Renderer._unescape_entities(xml_document.toxml())
             jinja_template = self.environment.from_string(template_string)
+
             result = jinja_template.render(**kwargs)
             result = Renderer._encode_escape_chars(result)
 
@@ -460,6 +465,8 @@ class Renderer(object):
         except:
             self.log.error('Error rendering template:\n%s',
                            xml_document.toprettyxml(), exc_info=True)
+
+            self.log.error('Unescaped template was:\n{}'.format(template_string))
             raise
         finally:
             self.log.debug('Rendering xml object finished')
