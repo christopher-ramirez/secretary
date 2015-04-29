@@ -156,6 +156,7 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+* **0.2.5**: Fix issues [#14](https://github.com/christopher-ramirez/secretary/issues/14) and [#16](https://github.com/christopher-ramirez/secretary/issues/16). Thanks to [DieterBuysAI](/DieterBuysAI) for this release.
 * **0.2.4**: Fix an UnicodeEncodeError exception raised scaping tab chars.
 * **0.2.3**: Fix issue [#12](https://github.com/christopher-ramirez/secretary/issues/12).
 * **0.2.2**: Introduce image support.
