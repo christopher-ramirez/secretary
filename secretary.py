@@ -26,6 +26,7 @@ from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from xml.dom.minidom import parseString
+from xml.parsers.expat import ExpatError
 from jinja2 import Environment, Undefined
 
 # Test python versions and normalize calls to basestring, unicode, etc.
@@ -306,20 +307,28 @@ class Renderer(object):
             parent.removeChild(discard)
 
 
-    def _unescape_entities(self, xml_text):
-        # unescape XML entities gt and lt
+    @staticmethod
+    def _unescape_entities(xml_text):
+        """
+        Strips tags of the form <text:span ...> from inside Jinja elements
+        and unescapes HTML codes for >, <, & and "
+        """
         unescape_rules = {
             r'(?is)({[{|%].*)(&gt;)(.*[%|}]})': r'\1>\3',
             r'(?is)({[{|%].*)(&lt;)(.*[%|}]})': r'\1<\3',
-            r'(?is)({[{|%].*)(<.?text:s.?>)(.*[%|}]})': r'\1 \3',
+            r'(?is)({[{|%].*)(&amp;)(.*[%|}]})': r'\1&\3',
+            r'(?is)({[{|%].*)(&quot;)(.*[%|}]})': r'\1"\3'
         }
 
-        for p, r in unescape_rules.items():
-            xml_text = re.sub(p, r, xml_text)
+        for regexp, replacement in unescape_rules.items():
+            subs_made = True
+            while subs_made:
+                xml_text, subs_made = re.subn(regexp, replacement, xml_text)
 
         return xml_text
 
-    def _encode_escape_chars(self, xml_text):
+    @staticmethod
+    def _encode_escape_chars(xml_text):
         # Replace line feed and/or tabs within text span entities.
         find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t])[^<]*?)</text:\1>'
         for m in re.findall(find_pattern, xml_text):
@@ -443,6 +452,7 @@ class Renderer(object):
             self._prepare_template_tags(xml_document)
             template_string = self._unescape_entities(xml_document.toxml())
             jinja_template = self.environment.from_string(template_string)
+
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
 
@@ -451,9 +461,15 @@ class Renderer(object):
                 self.replace_images(final_xml)
 
             return final_xml
+        except ExpatError as e:
+            near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
+            raise ExpatError('ExpatError at line %d, column %d\nNear of: "[...]%s[...]"' % \
+                          (e.lineno, e.offset, near))
         except:
             self.log.error('Error rendering template:\n%s',
                            xml_document.toprettyxml(), exc_info=True)
+
+            self.log.error('Unescaped template was:\n{}'.format(template_string))
             raise
         finally:
             self.log.debug('Rendering xml object finished')
