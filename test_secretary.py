@@ -35,6 +35,7 @@ class RenderTestCase(TestCase):
             '{{ if  <text:s> multiple_spaces }}': '{{ if    multiple_spaces }}',
             '{{ if  </text:s> multiple_spaces }}': '{{ if    multiple_spaces }}',
             '{{ if  <text:s/> multiple_spaces }}': '{{ if    multiple_spaces }}',
+            '{{ if <text:span/>[1,2,3]<text:span>&lt;</text:span>2 }}': '{{ if  [1,2,3] < 2 }}',
         }
 
         for test, expect in test_samples.items():
