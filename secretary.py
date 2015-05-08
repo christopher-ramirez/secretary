@@ -29,21 +29,9 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError
 from jinja2 import Environment, Undefined
 
-# Test python versions and normalize calls to basestring, unicode, etc.
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
+if sys.version_info.major == 3:
+    xrange = range
+    basestring = (str, bytes)
 
 
 FLOW_REFERENCES = {
