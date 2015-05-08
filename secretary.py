@@ -508,7 +508,6 @@ class Renderer(object):
         self.files['META-INF/manifest.xml'] = self.manifest.toxml().encode('ascii', 'xmlcharrefreplace')
         
         document = self._pack_document(self.files)
-        document = self._pack_document(self.files)
         return document.getvalue()
 
 
