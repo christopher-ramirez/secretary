@@ -14,18 +14,19 @@ Rendered documents are produced in ODT format, and can then be converted to PDF,
     pip install secretary
 
 ## Rendering a Template
-
+```python
     from secretary import Renderer
 
     engine = Renderer()
     result = engine.render(template, foo=foo, bar=bar)
+```
 
 Secretary implements a class called `Renderer`. `Renderer` takes a single argument called `environment` which is a jinja **[Environment][3]**.
 
 To render a template create an instance of class `Renderer` and call the instance's method `render` passing a template file and template's variables as keyword arguments. `template` can be a filename or a file object. `render` will return the rendered document in binary format.
 
 Before rendering a template, you can configure the internal templating engine using the `Renderer` instance's variable `environment`, which is an instance of jinja2 **[Environment][3]** class. For example, to declare a custom filter use:
-
+```python
     from secretary import Renderer
 
     engine = Renderer()
@@ -36,6 +37,7 @@ Before rendering a template, you can configure the internal templating engine us
 
     output = open('rendered_document.odt', 'wb')
     output.write(result)
+```
 
 ## Composing Templates
 
@@ -44,9 +46,10 @@ Secretary templates are simple ODT documents. You can create them using Writer. 
 ### Printing Variables
 
 Since Secretary use the same template syntax of Jinja2, to print a varible type a double curly braces enclosing the variable, like so:
-
+```jinja
     {{ foo.bar }}
     {{ foo['bar'] }}
+```
 
 However, mixing template instructions and normal text into the template document may become confusing and clutter the layout and most important, in most cases will produce invalid ODT documents. Secretary recommends using an alternative way of inserting fields. Insert a visual field in LibreOffice Writer from the menu `Insert` > `Fields` > `Other...` (or just press `Ctrl+F2`), then click on the `Functions` tab and select `Input field`. Click `Insert`. A dialog will appear where you can insert the print instructions. You can even insert simple control flow tags to dynamically change what is printed in the field.
 
@@ -58,33 +61,38 @@ Most of the time secretary will handle the internal composing of XML when you in
 
 #### Examples document structures
 **Printing multiple records in a table**
-``` plain
------------------------------------------
-| RECORDS ID        |  NAME              |
------------------------------------------
-| {% for record in records %}            |
------------------------------------------
-| {{ record.id }}   |  {{ record.name }} |
------------------------------------------
-| {% endfor %}                           |
------------------------------------------
+```jinja
+    ┌───────────────────┬────────────────────┐
+    │ RECORD ID         │ RECORD NAME        │
+    ├───────────────────┴────────────────────┤
+    │ {% for record in records %}            │
+    ├───────────────────┬────────────────────┤
+    │ {{ record.id }}   │  {{ record.name }} │
+    ├───────────────────┴────────────────────┤
+    │ {% endfor %}                           │
+    └────────────────────────────────────────┘
 ```
+
 **Conditional paragraphs**
-> `{% if already_paid %}`
->  YOU ALREADY PAID
-> `{% else %}`
->  YOU HAVEN'T PAID
-> `{% endif %}`
+```jinja
+    {% if already_paid %}
+        YOU ALREADY PAID
+    {% else %}
+        YOU HAVEN'T PAID
+    {% endif %}
+```
 
 The last example could had been simplified into a single paragraph in Writer like:
-
-> `{% if already_paid %}`YOU ALREADY PAID`{% else %}`YOU HAVEN'T PAID`{% endif %}`
+```jinja
+    {% if already_paid %}YOU ALREADY PAID{% else %}YOU HAVEN'T PAID{% endif %}
+```
 
 **Printing a list of names**
-
-> * `{% for name in names %}`
-> * `{{ name }}`
-> * `{* endfor %}`
+```jinja
+    {% for name in names %}
+        {{ name }}
+    {% endfor %}
+```
 
 Automatic control flow in Secretary will handle the intuitive result of the above examples and similar thereof.
 
@@ -150,7 +158,6 @@ Convert the value, a markdown formated string, into a ODT formated text. Example
 Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
 
         {{ invoice.number|pad(6) }}
-
 
 ### Features of jinja2 not supported
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
