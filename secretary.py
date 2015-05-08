@@ -29,9 +29,14 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError
 from jinja2 import Environment, Undefined
 
-if sys.version_info.major == 3:
-    xrange = range
-    basestring = (str, bytes)
+try:
+    if sys.version_info.major == 3:
+        xrange = range
+        basestring = (str, bytes)
+except AttributeError:
+    # On Python 2.6 sys.version_info is a tuple
+    if not isinstance(sys.version_info, tuple):
+        raise
 
 
 FLOW_REFERENCES = {
