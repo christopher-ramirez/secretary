@@ -26,7 +26,7 @@ from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from xml.dom.minidom import parseString
-from xml.parsers.expat import ExpatError
+from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined
 
 try:
@@ -308,10 +308,10 @@ class Renderer(object):
         """
         unescape_rules = {
             r'(?is)({([{|%])[^%|}]*?)(</?text:s.*?>)(.*?[%|}]})': r'\1 \4',
-            r'(?is)({([{|%]).*)(&gt;)(.*?[%|}]})'               : r'\1>\4',
-            r'(?is)({([{|%]).*)(&lt;)(.*?[%|}]})'               : r'\1<\4',
-            r'(?is)({([{|%]).*)(&amp;)(.*?[%|}]})'              : r'\1&\4',
-            r'(?is)({([{|%]).*)(&quot;)(.*?[%|}]})'             : r'\1"\4',
+            r'(?is)({([{|%])[^%|}]*?)(&gt;)(.*?[%|}]})'         : r'\1>\4',
+            r'(?is)({([{|%])[^%|}]*?)(&lt;)(.*?[%|}]})'         : r'\1<\4',
+            r'(?is)({([{|%])[^%|}]*?)(&amp;)(.*?[%|}]})'        : r'\1&\4',
+            r'(?is)({([{|%])[^%|}]*?)(&quot;)(.*?[%|}]})'       : r'\1"\4',
         }
 
         for regexp, replacement in unescape_rules.items():
@@ -457,8 +457,8 @@ class Renderer(object):
             return final_xml
         except ExpatError as e:
             near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
-            raise ExpatError('ExpatError at line %d, column %d\nNear of: "[...]%s[...]"' % \
-                          (e.lineno, e.offset, near))
+            raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
+                             (ErrorString(e.code), e.lineno, e.offset, near))
         except:
             self.log.error('Error rendering template:\n%s',
                            xml_document.toprettyxml(), exc_info=True)
