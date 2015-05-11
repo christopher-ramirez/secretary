@@ -61,17 +61,7 @@ Most of the time secretary will handle the internal composing of XML when you in
 
 #### Examples document structures
 **Printing multiple records in a table**
-```jinja
-    ┌───────────────────┬────────────────────┐
-    │ RECORD ID         │ RECORD NAME        │
-    ├───────────────────┴────────────────────┤
-    │ {% for record in records %}            │
-    ├───────────────────┬────────────────────┤
-    │ {{ record.id }}   │  {{ record.name }} │
-    ├───────────────────┴────────────────────┤
-    │ {% endfor %}                           │
-    └────────────────────────────────────────┘
-```
+![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/table_01.png)
 
 **Conditional paragraphs**
 ```jinja
