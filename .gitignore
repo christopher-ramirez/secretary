@@ -6,3 +6,7 @@
 dist
 build
 eggs
+
+# Virtual Environments
+env
+.env

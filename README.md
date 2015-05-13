@@ -64,13 +64,7 @@ Most of the time secretary will handle the internal composing of XML when you in
 ![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/table_01.png)
 
 **Conditional paragraphs**
-```jinja
-    {% if already_paid %}
-        YOU ALREADY PAID
-    {% else %}
-        YOU HAVEN'T PAID
-    {% endif %}
-```
+![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/conditional_paragraph_01.png)
 
 The last example could had been simplified into a single paragraph in Writer like:
 ```jinja
