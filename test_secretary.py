@@ -30,11 +30,24 @@ class RenderTestCase(TestCase):
 
     def test__unescape_entities(self):
         test_samples = {
-            '{{ "greater_than_1" if 1&gt;0 }}': '{{ "greater_than_1" if 1>0 }}',
-            '{{ "lower_than_1" if 1&lt;0 }}': '{{ "lower_than_1" if 1<0 }}',
-            '{{ if  <text:s> multiple_spaces }}': '{{ if    multiple_spaces }}',
-            '{{ if  </text:s> multiple_spaces }}': '{{ if    multiple_spaces }}',
-            '{{ if  <text:s/> multiple_spaces }}': '{{ if    multiple_spaces }}',
+            # test scaping of &gt;
+            '{{ "greater_than_1" if 1&gt;0 }}'               : '{{ "greater_than_1" if 1>0 }}',
+            '{% a &gt; b %}'                                 : '{% a > b %}',
+            '{{ a &gt; b }}'                                 : '{{ a > b }}',
+            '{% a|filter &gt; b %}'                          : '{% a|filter > b %}',
+            '<node>{% a == b %}</node>{% else if a &gt; b %}': '<node>{% a == b %}</node>{% else if a > b %}',
+
+            # test scaping of &lt; and &quot;
+            '{{ &quot;lower_than_1&quot; if 1&lt;0 }}'       : '{{ "lower_than_1" if 1<0 }}',
+            '{% a &lt; b %}'                                 : '{% a < b %}',
+            '{{ a &lt; b }}'                                 : '{{ a < b }}',
+            '{% a|filter &lt; b %}'                          : '{% a|filter < b %}',
+            '<node>{% a == b %}</node>{% else if a &lt; b %}': '<node>{% a == b %}</node>{% else if a < b %}',
+            
+            # test scapig of multiple spaces, even encoded as <text:space> nodes
+            '{{ if  <text:s> multiple_spaces }}'                      : '{{ if    multiple_spaces }}',
+            '{{ if  </text:s> multiple_spaces }}'                     : '{{ if    multiple_spaces }}',
+            '{{ if  <text:s/> multiple_spaces }}'                     : '{{ if    multiple_spaces }}',
             '{{ if <text:span/>[1,2,3]<text:span>&lt;</text:span>2 }}': '{{ if  [1,2,3] < 2 }}',
         }
 
