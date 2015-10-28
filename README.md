@@ -166,6 +166,19 @@ Convert the value, a markdown formated string, into a ODT formated text. Example
 
         {{ invoice.description|markdown }}
 
+
+Supported elements are:
+
+* Headings
+* links
+* paragraphs
+* Bold, Italic, Strong, ...
+* image
+* lists (Ordered/Unordered)
+* Code
+* Footnotes
+
+
 - **pad(value, length)**
 Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
 
