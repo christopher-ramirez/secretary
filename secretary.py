@@ -686,7 +686,9 @@ class Renderer(object):
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
         styles_cache = {}   # cache styles searching
-        html_text = markdown(markdown_text, extras=['footnote'])
+        html_text = markdown(markdown_text, extras=['footnotes'])
+        html_text = html_text.replace('\n', '')
+        
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
@@ -697,11 +699,17 @@ class Renderer(object):
             html_nodes = xml_object.getElementsByTagName(tag)
             for html_node in html_nodes:
                 transform_tag = transform_map[tag]['replace_with']
+                
+                # Transform node using callables
                 if callable(transform_tag):
                     odt_node = transform_tag(self, xml_object, html_node)
                 else:
                     odt_node = xml_object.createElement(transform_tag)
 
+                # When odt_node is Empty, Transforming is done!
+                if not odt_node:
+                    continue
+                
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:
