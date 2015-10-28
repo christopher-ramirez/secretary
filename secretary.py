@@ -16,18 +16,16 @@ Secretary
 """
 
 from __future__ import unicode_literals, print_function
-
 import io
+import time
 import re
 import sys
-import logging
 import zipfile
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
-from xml.dom.minidom import parseString
-from xml.parsers.expat import ExpatError, ErrorString
-from jinja2 import Environment, Undefined
+from jinja2 import Environment, Undefined,TemplateSyntaxError,TemplateError
+from lxml import etree
 
 try:
     if sys.version_info.major == 3:
@@ -38,6 +36,7 @@ except AttributeError:
     if not isinstance(sys.version_info, tuple):
         raise
 
+nodes_added_vars={}
 
 FLOW_REFERENCES = {
     'text:p'             : 'text:p',
@@ -124,8 +123,8 @@ class Renderer(object):
         returns:
             None
         """
-        self.log = logging.getLogger(__name__)
-        self.log.debug('Initing a Renderer instance\nTemplate')
+
+        print('Initing a Renderer instance\nTemplate')
 
         if environment:
             self.environment = environment
@@ -142,6 +141,7 @@ class Renderer(object):
 
 
     def media_loader(self, callback):
+        ms_start = time.time()*1000.0
         """This sets the the media loader. A user defined function which
         loads media. The function should take a template value, optionals
         args and kwargs. Is media exists should return a tuple whose first
@@ -150,25 +150,32 @@ class Renderer(object):
 
         See Renderer.fs_loader funcion for an example"""
         self.media_callback = callback
+        ms_end = time.time()*1000.0
+        print('Tempo loader:'+str(ms_end - ms_start))
         return callback
 
     def _unpack_template(self, template):
+        ms_start = time.time()*1000.0
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
         # and return a dict with every file in the archive
-        self.log.debug('Unpacking template file')
+        print('Unpacking template file')
         
         archive_files = {}
         archive = zipfile.ZipFile(template, 'r')
         for zfile in archive.filelist:
             archive_files[zfile.filename] = archive.read(zfile.filename)
 
+        ms_end = time.time()*1000.0
+        print('Tempo unpack:'+str(ms_end - ms_start))
         return archive_files
 
-        self.log.debug('Unpack completed')
+        print('Unpack completed')
 
     def _pack_document(self, files):
         # Store to a zip files in files
-        self.log.debug('packing document')
+        ms_start = time.time()*1000.0
+
+        print('packing document')
         zip_file = io.BytesIO()
 
         zipdoc = zipfile.ZipFile(zip_file, 'a')
@@ -178,7 +185,9 @@ class Renderer(object):
             else:
                 zipdoc.writestr(fname, content)
 
-        self.log.debug('Document packing completed')
+        print('Document packing completed')
+        ms_end = time.time()*1000.0
+        print('Tempo pack:'+str(ms_end - ms_start))
 
         return zip_file
 
@@ -222,30 +231,29 @@ class Renderer(object):
           </table>
         """
 
-        self.log.debug('Preparing template tags')
-        fields = xml_document.getElementsByTagName('text:text-input')
+        print('Preparing template tags')
+        fields = self.retrieve_nodes_by_name(xml_document,'{urn:oasis:names:tc:opendocument:xmlns:text:1.0}text-input')
 
         # First, count secretary fields
         for field in fields:
-            if not field.hasChildNodes():
-                continue
 
-            field_content = field.childNodes[0].data.strip()
+            field_content = field.text.strip()
 
             if not re.findall(r'(?is)^{[{|%].*[%|}]}$', field_content):
                 # Field does not contains jinja template tags
                 continue
 
             is_block_tag = re.findall(r'(?is)^{%[^{}]*%}$', field_content)
-            self.inc_node_fields_count(field.parentNode,
-                    'block' if is_block_tag else 'variable')
+            pn = field.getparent()
+            self.inc_node_fields_count(pn,'block' if is_block_tag else 'variable')
 
         # Do field replacement and moving
         for field in fields:
-            if not field.hasChildNodes():
-                continue
 
-            field_content = field.childNodes[0].data.strip()
+            bt = False
+            of = False
+
+            field_content = field.text.strip()
 
             if not re.findall(r'(?is)^{[{|%].*[%|}]}$', field_content):
                 # Field does not contains jinja template tags
@@ -253,7 +261,7 @@ class Renderer(object):
 
             is_block_tag = re.findall(r'(?is)^{%[^{}]*%}$', field_content)
             discard = field
-            field_reference = field.getAttribute('text:description').strip().lower()
+            field_reference = field.get('{urn:oasis:names:tc:opendocument:xmlns:text:1.0}description').strip().lower()
 
             if re.findall(r'\|markdown', field_content):
                 # a markdown field should take the whole paragraph
@@ -265,40 +273,71 @@ class Renderer(object):
                 node_type = FLOW_REFERENCES.get(field_reference, False)
                 if node_type:
                     discard = self._parent_of_type(field, node_type)
-
-                jinja_node = self.create_text_node(xml_document, field_content)
-
             elif is_block_tag:
                 # Find the common immediate parent of this and any other field.
-                while discard.parentNode.secretary_field_count <= 1:
-                    discard = discard.parentNode
+
+                while nodes_added_vars[discard.getparent()]['secretary_field_count'] <= 1:
+                    discard = discard.getparent()
 
                 if discard is not None:
-                    jinja_node = self.create_text_node(xml_document,
-                                                       field_content)
-
+                    bt = True
             else:
-                jinja_node = self.create_text_span_node(xml_document,
-                                                        field_content)
+                ot=True
+                jinja_node = self.create_text_span_node_new(xml_document,
+                                                            field_content)
 
-            parent = discard.parentNode
+            parent = discard.getparent()
             if not field_reference.startswith('after::'):
-                parent.insertBefore(jinja_node, discard)
+                if bt:
+                    discard.getprevious().tail = field_content
+                elif ot:
+                    discard.addprevious(jinja_node)
             else:
-                if discard.isSameNode(parent.lastChild):
-                    parent.appendChild(jinja_node)
+                children = parent.getchildren
+                if children is not None:
+                    childrensize = len(parent)
+                    parentlastchild =  children[childrensize]
+
+                if discard == parentlastchild:
+                    if bt:
+                        discard.getprevious().tail = field_content
+                    elif ot:
+                        discard.addprevious(jinja_node)
                 else:
-                    parent.insertBefore(jinja_node,
-                                        discard.nextSibling)
+                    if bt:
+                        discard.getprevious().tail = field_content
+                    elif ot:
+                        parent.addprevious(jinja_node,discard.getnext)
 
             if field_reference.startswith(('after::', 'before::')):
                 # Do not remove whole field container. Just remove the
                 # <text:text-input> parent node if field has it.
                 discard = self._parent_of_type(field, 'text:p')
-                parent = discard.parentNode
+                parent = discard.getparent()
 
-            parent.removeChild(discard)
+            parent.remove(discard)
 
+    def issamenode(nodeaa,nodeb,tagsame=True):
+        for attrib in nodeaa.attrib:
+            if nodeaa.get(attrib) != nodeb.get(attrib):
+                #print (nodeaa.get(attrib),nodeb.get(attrib))
+                return False
+            else:
+                return False
+        if nodeaa.text != nodeb.text:
+            return False
+        if tagsame==True:
+            if nodeaa.tag != nodeb.tag:
+                return False
+        if nodeaa.prefix != nodeb.prefix:
+            return False
+        if nodeaa.tail != nodeb.tail:
+            return False
+        if nodeaa.values()!=nodeb.values(): #may be redundant to the attrib matching
+            return False
+        if nodeaa.keys() != nodeb.keys(): #may also be redundant to the attrib matching
+            return False
+        return True
 
     @staticmethod
     def _unescape_entities(xml_text):
@@ -332,7 +371,6 @@ class Renderer(object):
 
         return xml_text
 
-
     def add_media_to_archive(self, media, mime, name=''):
         """Adds to "Pictures" archive folder the file in `media` and register
         it into manifest file."""
@@ -351,13 +389,12 @@ class Renderer(object):
         if hasattr(media, 'close'):
             media.close()
 
-        files_node = self.manifest.getElementsByTagName('manifest:manifest')[0]
-        node = self.create_node(self.manifest, 'manifest:file-entry', files_node)
-        node.setAttribute('manifest:full-path', media_path)
-        node.setAttribute('manifest:media-type', mime)
+        files_node = self.manifest.getroot()
+        node = self.create_node(self.manifest, '{urn:oasis:names:tc:opendocument:xmlns:manifest:1.0}file-entry', files_node)
+        node.set('{urn:oasis:names:tc:opendocument:xmlns:manifest:1.0}full-path', media_path)
+        node.set('{urn:oasis:names:tc:opendocument:xmlns:manifest:1.0}media-type', mime)
 
         return media_path
-
 
     def fs_loader(self, media, *args, **kwargs):
         """Loads a file from the file system.
@@ -370,43 +407,42 @@ class Renderer(object):
             filename = media
         else:
             if not self.media_path:
-                self.log.debug('media_path property not specified to load images from.')
+                print('media_path property not specified to load images from.')
                 return
 
             filename = path.join(self.media_path, media)
             if not path.isfile(filename):
-                self.log.debug('Media file "%s" does not exists.' % filename)
+                print('Media file "%s" does not exists.' % filename)
                 return
 
         mime = guess_type(filename)
         return (open(filename, 'rb'), mime[0] if mime else None)
 
-
     def replace_images(self, xml_document):
         """Perform images replacements"""
-        self.log.debug('Inserting images')
-        frames = xml_document.getElementsByTagName('draw:frame')
+        print('Inserting images')
+        frames = self.retrieve_nodes_by_name(xml_document,str('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}frame'))
 
         for frame in frames:
-            if not frame.hasChildNodes():
+
+            if not len(frame):
                 continue
 
-            key = frame.getAttribute('draw:name')
+            key = frame.get('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}name')
             if key not in self.template_images:
                 continue
 
             # Get frame attributes
             frame_attrs = dict()
-            for i in xrange(frame.attributes.length):
-                attr = frame.attributes.item(i)
-                frame_attrs[attr.name] = attr.value 
 
+            for k, v in frame.attrib.iteritems():
+                frame_attrs[k] = v
             # Get child draw:image node and its attrs
-            image_node = frame.childNodes[0]
+            image_node = frame[0]
             image_attrs = dict()
-            for i in xrange(image_node.attributes.length):
-                attr = image_node.attributes.item(i)
-                image_attrs[attr.name] = attr.value 
+
+            for k, v in image_node.attrib.iteritems():
+                image_attrs[k] = v
 
             # Request to media loader the image to use
             image = self.media_callback(self.template_images[key]['value'],
@@ -418,58 +454,86 @@ class Renderer(object):
             # Update frame and image node attrs (if they where updated in
             # media_callback call)
             for k, v in frame_attrs.items():
-                frame.setAttribute(k, v)
+                frame.set(k, v)
                 
             for k, v in image_attrs.items():
-                image_node.setAttribute(k, v)
+                image_node.set(k, v)
 
             # Keep original image reference value
             if isinstance(self.template_images[key]['value'], basestring):
-                frame.setAttribute('draw:name',
-                                   self.template_images[key]['value'])
+                frame.set('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}name',self.template_images[key]['value'])
 
             # Does the madia loader returned something?
             if not image:
                 continue
 
-            mname = self.add_media_to_archive(media=image[0], mime=image[1],
-                                              name=key)
+            mname = self.add_media_to_archive(media=image[0], mime=image[1],name=key)
             if mname:
-                image_node.setAttribute('xlink:href', mname)
+                image_node.set('{http://www.w3.org/1999/xlink}href', mname)
 
     def _render_xml(self, xml_document, **kwargs):
         # Prepare the xml object to be processed by jinja2
-        self.log.debug('Rendering XML object')
+        ms_start = time.time()*1000.0
+
+        print('Rendering XML object')
+
+        template_string = ""
 
         try:
             self.template_images = dict()
             self._prepare_template_tags(xml_document)
-            template_string = self._unescape_entities(xml_document.toxml())
+
+            template_string = self._unescape_entities(etree.tostring(xml_document,encoding='unicode',pretty_print=True))
             jinja_template = self.environment.from_string(template_string)
 
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
 
-            final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            #final_xml  =  etree.parse(result)
+            final_xml  =  etree.fromstring(result)
+
             if self.template_images:
                 self.replace_images(final_xml)
 
             return final_xml
-        except ExpatError as e:
-            near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
-            raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
-                             (ErrorString(e.code), e.lineno, e.offset, near))
+        except TemplateSyntaxError, inst:
+            self.log.error('Error rendering template:\n%s',
+                           xml_document, exc_info=True)
+            self.log.error('Unescaped template line:'+str(inst.lineno))
+            raise
+        except TemplateError :
+            self.log.error('Error rendering template:\n%s',
+                           xml_document, exc_info=True)
+
+            raise
         except:
             self.log.error('Error rendering template:\n%s',
-                           xml_document.toprettyxml(), exc_info=True)
+                           xml_document, exc_info=True)
 
-            self.log.error('Unescaped template was:\n{}'.format(template_string))
             raise
         finally:
-            self.log.debug('Rendering xml object finished')
+            ms_end = time.time()*1000.0
+            print('Tempo _render_xml:'+str(ms_end - ms_start))
+            print('Rendering xml object finished')
 
+    def retrieve_nodes_by_name(self,rootelement,tagnodename):
 
-    def render(self, template, **kwargs):
+        nodes=[]
+
+        for rootiter in rootelement.getiterator():
+            for node in rootiter:
+                #print(node)
+                tag_text = str(node.tag)
+                if tag_text == tagnodename:
+                    #print("tag:"+str(node.tag))
+                    #print("text:"+str(node.text))
+                    nodes.append(node)
+
+        return nodes
+
+    def render(self, template, use_parallel_xml_render='False',parallel_xml_render_max_workers=5,**kwargs):
+        ms_start = time.time()*1000.0
+
         """
             Render a template
 
@@ -481,34 +545,108 @@ class Renderer(object):
                 A binary stream which contains the rendered document.
         """
 
-        self.log.debug('Initing a template rendering')
+        print('Initing a template rendering')
         self.files = self._unpack_template(template)
         self.render_vars = {}
 
+
         # Keep content and styles object since many functions or
         # filters may work with then
-        self.content  = parseString(self.files['content.xml']) 
-        self.styles   = parseString(self.files['styles.xml'])
-        self.manifest = parseString(self.files['META-INF/manifest.xml'])
-        
+
+        ms_start_t = time.time()*1000.0
+        ms_start = time.time()*1000.0
+        contentobject = io.BytesIO(self.files['content.xml'])
+        self.content  =  etree.parse(contentobject)
+        ms_end = time.time()*1000.0
+        print('Tempo parse content.xml1 lxml:'+(str(ms_end-ms_start)))
+
+        ms_start = time.time()*1000.0
+        stylesobject = io.BytesIO(self.files['styles.xml'])
+        self.styles  = etree.parse(stylesobject)
+        ms_end = time.time()*1000.0
+        print('Tempo parse styles.xml lxml:'+(str(ms_end-ms_start)))
+
+        ms_start = time.time()*1000.0
+        manifestobject = io.BytesIO(self.files['META-INF/manifest.xml'])
+        self.manifest = etree.parse(manifestobject)
+        ms_end = time.time()*1000.0
+        print('Tempo parse manifest.xml lxml:'+(str(ms_end-ms_start)))
+
+        ms_end_t = time.time()*1000.0
+        print('Tempo totale parse lxml:'+(str(ms_end_t-ms_start_t)))
+
+        ms_end = time.time()*1000.0
+        print('Tempo parse manifest.xml lxml:'+(str(ms_end-ms_start)))
+
         # Render content.xml keeping just 'office:body' node.
-        rendered_content = self._render_xml(self.content, **kwargs)
-        self.content.getElementsByTagName('office:document-content')[0].replaceChild(
-            rendered_content.getElementsByTagName('office:body')[0],
-            self.content.getElementsByTagName('office:body')[0]
-        )
 
-        # Render styles.xml
-        self.styles = self._render_xml(self.styles, **kwargs)
+        print('use_parallel_xml_render:'+use_parallel_xml_render)
 
-        self.log.debug('Template rendering finished')
+        ms_start = time.time()*1000.0
+        try:
+            self.styles = self._render_xml(self.styles, **kwargs)
+            rendered_content = self._render_xml(self.content, **kwargs)
+        except Exception,inst:
+            raise
+        finally:
+            ms_end = time.time()*1000.0
 
-        self.files['content.xml']           = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
-        self.files['styles.xml']            = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
-        self.files['META-INF/manifest.xml'] = self.manifest.toxml().encode('ascii', 'xmlcharrefreplace')
-        
+        print('Tempo totale render xml content e style:'+(str(ms_end-ms_start)))
+
+        original_node = self.content.getroot().find('{urn:oasis:names:tc:opendocument:xmlns:office:1.0}body')
+        new_node =  rendered_content.find('{urn:oasis:names:tc:opendocument:xmlns:office:1.0}body')
+        self.content.getroot().replace(original_node,new_node)
+
+
+        print('Template rendering finished')
+
+        self.files['content.xml']           = etree.tostring(self.content).encode('ascii', 'xmlcharrefreplace')
+        self.files['styles.xml']           = etree.tostring(self.styles).encode('ascii', 'xmlcharrefreplace')
+        self.files['META-INF/manifest.xml']  = etree.tostring(self.manifest).encode('ascii', 'xmlcharrefreplace')
+
         document = self._pack_document(self.files)
+        ms_end = time.time()*1000.0
+        print('Tempo render:'+str(ms_end - ms_start))
         return document.getvalue()
+
+    def renderxml(self,xml,**kwargs):
+        print('renderxml')
+        try:
+            return self._render_xml(xml, **kwargs)
+        except:
+            raise
+
+
+    """
+    def parsexml(self,xml):
+        print('parse xml')
+        xmlobject = io.BytesIO(xml)
+        output  = etree.parse(xmlobject)
+        return output
+
+    def parsexmls(self):
+
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+        futures = {}
+        ms_start = time.time()*1000.0
+
+        tpstyles = executor.submit(self.parsexml, self.files['styles.xml'])
+        tpcontent = executor.submit(self.parsexml, self.files['content.xml'])
+        tpmanifest = executor.submit(self.parsexml, self.files['META-INF/manifest.xml'])
+
+        futures[tpstyles] = 'tpstyles'
+        futures[tpcontent] = 'tpcontent'
+        futures[tpmanifest] = 'tpmanifest'
+
+        result = concurrent.futures.wait(futures, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+        ms_end = time.time()*1000.0
+        print('Tempo totale parse xmls:'+(str(ms_end-ms_start)))
+
+
+        self.styles = tpstyles.result()
+        self.content = tpcontent.result()
+        self.manifest = tpmanifest.result()
+    """
 
 
     def _parent_of_type(self, node, of_type):
@@ -516,34 +654,32 @@ class Renderer(object):
         # Returns None if nothing is found.
 
         if hasattr(node, 'parentNode'):
-            if node.parentNode.nodeName.lower() == of_type:
-                return node.parentNode
+            if node.getparent.name.lower() == of_type:
+                return node.getparent
             else:
-                return self._parent_of_type(node.parentNode, of_type)
+                pn = node.getparent
+                return self._parent_of_type(pn, of_type)
         else:
             return None
 
     def create_node(self, xml_document, node_type, parent=None):
         """Creates a node in `xml_document` of type `node_type` and specified,
         as child of `parent`."""
+        node = etree.SubElement(parent, node_type)
+        """
         node = xml_document.createElement(node_type)
         if parent:
             parent.appendChild(node)
-
+        """
         return node
 
-    def create_text_span_node(self, xml_document, content):
-        span = xml_document.createElement('text:span')
-        text_node = self.create_text_node(xml_document, content)
-        span.appendChild(text_node)
-
+    def create_text_span_node_new(self, xml_document, content):
+        span = etree.Element('{urn:oasis:names:tc:opendocument:xmlns:text:1.0}span')
+        span.text = content
         return span
 
     def create_text_node(self, xml_document, text):
-        """
-        Creates a text node
-        """
-        return xml_document.createTextNode(text)
+        return None
 
     def inc_node_fields_count(self, node, field_type='variable'):
         """ Increase field count of node and its parents """
@@ -551,24 +687,46 @@ class Renderer(object):
         if node is None:
             return
 
-        if not hasattr(node, 'secretary_field_count'):
-            setattr(node, 'secretary_field_count', 0)
+        try:
+            if nodes_added_vars[node] is None:
+                node_external_vars = {}
+                nodes_added_vars[node] = node_external_vars
+        except:
+            node_external_vars = {}
+            nodes_added_vars[node] = node_external_vars
 
-        if not hasattr(node, 'secretary_variable_count'):
-            setattr(node, 'secretary_variable_count', 0)
+        node_external_vars = nodes_added_vars[node]
 
-        if not hasattr(node, 'secretary_block_count'):
-            setattr(node, 'secretary_block_count', 0)
+        try:
+            if node_external_vars[str('secretary_field_count')] is None:
+                node_external_vars[str('secretary_field_count')] = 0
+        except:
+            node_external_vars[str('secretary_field_count')] = 0
 
-        node.secretary_field_count += 1
+        try:
+            if node_external_vars[str('secretary_variable_count')] is None:
+                node_external_vars[str('secretary_variable_count')] = 0
+        except:
+            node_external_vars[str('secretary_variable_count')] = 0
+
+        try:
+            if node_external_vars[str('secretary_block_count')] is None:
+                node_external_vars[str('secretary_block_count')] = 0
+        except:
+            node_external_vars[str('secretary_block_count')] = 0
+
+        node_external_vars[str('secretary_field_count')] += 1
+
+        #node.secretary_field_count += 1
         if field_type == 'variable':
-            node.secretary_variable_count += 1
+            node_external_vars[str('secretary_variable_count')] += 1
+            #node.secretary_variable_count += 1
         else:
-            node.secretary_block_count += 1
+            node_external_vars[str('secretary_block_count')] += 1
+            #node.secretary_block_count += 1
+        pn = node.getparent()
+        self.inc_node_fields_count(pn, field_type)
 
-        self.inc_node_fields_count(node.parentNode, field_type)
-
-    
     def get_style_by_name(self, style_name):
         """
             Search in <office:automatic-styles> for style_name.
