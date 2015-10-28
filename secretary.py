@@ -20,6 +20,8 @@ from __future__ import unicode_literals, print_function
 import io
 import re
 import sys
+import struct
+import imghdr
 import logging
 import zipfile
 from os import path
@@ -94,6 +96,42 @@ def media_loader(f):
 def pad_string(value, length=5):
     value = str(value)
     return value.zfill(length)
+
+# credits goes to source http://stackoverflow.com/a/20380514
+def get_image_size(fname):
+    '''Determine the image type of fhandle and return its size.
+    from draco'''
+    with open(fname, 'rb') as fhandle:
+        head = fhandle.read(24)
+        if len(head) != 24:
+            return
+        if imghdr.what(fname) == 'png':
+            check = struct.unpack('>i', head[4:8])[0]
+            if check != 0x0d0a1a0a:
+                return
+            width, height = struct.unpack('>ii', head[16:24])
+        elif imghdr.what(fname) == 'gif':
+            width, height = struct.unpack('<HH', head[6:10])
+        elif imghdr.what(fname) == 'jpeg':
+            try:
+                fhandle.seek(0) # Read 0xff next
+                size = 2
+                ftype = 0
+                while not 0xc0 <= ftype <= 0xcf:
+                    fhandle.seek(size, 1)
+                    byte = fhandle.read(1)
+                    while ord(byte) == 0xff:
+                        byte = fhandle.read(1)
+                    ftype = ord(byte)
+                    size = struct.unpack('>H', fhandle.read(2))[0] - 2
+                # We are at a SOFn block
+                fhandle.seek(1, 1)  # Skip `precision' byte.
+                height, width = struct.unpack('>HH', fhandle.read(4))
+            except Exception: #IGNORE:W0703
+                return
+        else:
+            return
+        return width, height
 
 class Renderer(object):
     """
@@ -382,8 +420,12 @@ class Renderer(object):
         return (open(filename, 'rb'), mime[0] if mime else None)
 
 
-    def replace_images(self, xml_document):
+    def replace_images(self, xml_document, dpi=None):
         """Perform images replacements"""
+        if dpi is None:
+            # Set the default dpi of images
+            dpi = 200
+        
         self.log.debug('Inserting images')
         frames = xml_document.getElementsByTagName('draw:frame')
 
@@ -407,7 +449,7 @@ class Renderer(object):
             for i in xrange(image_node.attributes.length):
                 attr = image_node.attributes.item(i)
                 image_attrs[attr.name] = attr.value 
-
+            
             # Request to media loader the image to use
             image = self.media_callback(self.template_images[key]['value'],
                                         *self.template_images[key]['args'],
@@ -427,11 +469,20 @@ class Renderer(object):
             if isinstance(self.template_images[key]['value'], basestring):
                 frame.setAttribute('draw:name',
                                    self.template_images[key]['value'])
+                
+                image_size = get_image_size(self.template_images[key]['value'])
+                if not (frame.getAttribute('svg:width') or frame.getAttribute('svg:height'))  and image_size:
+                    width, height = image_size
+                    # Convert the image size from pixel to inch
+                    width = int(image_size[0] / dpi)
+                    height = int(image_size[1] / dpi)
+                    frame.setAttribute('svg:width', '%sin' % width)
+                    frame.setAttribute('svg:height', '%sin' % height)
 
             # Does the madia loader returned something?
             if not image:
                 continue
-
+            
             mname = self.add_media_to_archive(media=image[0], mime=image[1],
                                               name=key)
             if mname:
@@ -452,7 +503,9 @@ class Renderer(object):
 
             final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
             if self.template_images:
-                self.replace_images(final_xml)
+                # pass document dpi to replace images properly 
+                image_dpi = kwargs.get('_dpi', None)
+                self.replace_images(final_xml, dpi=image_dpi)
 
             return final_xml
         except ExpatError as e:
@@ -645,6 +698,19 @@ class Renderer(object):
             for html_node in html_nodes:
                 odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
 
+                # Tra
+                if tag == 'img':
+                    print('HERE')
+                    image_src = html_node.getAttribute('src')
+                    # register image to be Transfered later using propper media loader.
+                    _key = self.image_filter(image_src)
+                    odt_node.setAttribute('draw:name', _key)
+                    
+                    # draw:frame needs a child `draw:image` node
+                    odt_child = xml_object.createElement('draw:image')
+                    odt_node.appendChild(odt_child)
+                    continue
+                
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:

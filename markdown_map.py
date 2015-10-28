@@ -124,4 +124,8 @@ transform_map = {
     'li': {
         'replace_with': 'text:list-item'
     },
+    
+    'img': {
+        'replace_with': 'draw:frame'
+    }
 }
