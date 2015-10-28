@@ -645,6 +645,25 @@ class Renderer(object):
             for html_node in html_nodes:
                 odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
 
+                # Tra
+                if tag == 'img':
+                    print('HERE')
+                    image_src = html_node.getAttribute('src')
+                    # register image to be Transfered later using propper media loader.
+                    _key = self.image_filter(image_src)
+                    odt_node.setAttribute('draw:name', _key)
+                    # FIXME: media loader should automatically insert such attributes
+                    odt_node.setAttribute('svg:width', '5in')
+                    odt_node.setAttribute('svg:height', '5in')
+                    
+                    # a draw:frame nedd a child draw:image node
+                    odt_child = xml_object.createElement('draw:image')
+                    odt_node.appendChild(odt_child)
+                    
+                    # for images, there's no need to continue the proccess. the replace_images 
+                    # method will finish the transfer at the end of _render_xml method
+                    # continue
+                
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:
