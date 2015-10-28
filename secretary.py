@@ -676,7 +676,7 @@ class Renderer(object):
 
         if not isinstance(markdown_text, basestring):
             return ''
-
+        
         from xml.dom import Node
         from markdown_map import transform_map
 
@@ -686,7 +686,7 @@ class Renderer(object):
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
         styles_cache = {}   # cache styles searching
-        html_text = markdown(markdown_text)
+        html_text = markdown(markdown_text, extras=['footnote'])
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
@@ -696,19 +696,12 @@ class Renderer(object):
         for tag in transform_map:
             html_nodes = xml_object.getElementsByTagName(tag)
             for html_node in html_nodes:
-                odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
+                transform_tag = transform_map[tag]['replace_with']
+                if callable(transform_tag):
+                    odt_node = transform_tag(self, xml_object, html_node)
+                else:
+                    odt_node = xml_object.createElement(transform_tag)
 
-                # Tra
-                if tag == 'img':
-                    image_src = html_node.getAttribute('src')
-                    # register image to be Transfered later using propper media loader.
-                    _key = self.image_filter(image_src)
-                    odt_node.setAttribute('draw:name', _key)
-                    
-                    # draw:frame needs a child `draw:image` node
-                    odt_child = xml_object.createElement('draw:image')
-                    odt_node.appendChild(odt_child)
-                
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:

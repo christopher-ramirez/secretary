@@ -49,6 +49,19 @@ common_styles = {
     }
 }
 
+def transform_img(renderer, xml_object, html_node):
+    # register image to be Transfered later using propper media loader.
+    image_src = html_node.getAttribute('src')
+    image_key = renderer.image_filter(image_src)
+    
+    frame_node = xml_object.createElement('draw:frame')
+    frame_node.setAttribute('draw:name', image_key)
+    
+    # draw:frame needs a child `draw:image` node
+    frame_child = xml_object.createElement('draw:image')
+    frame_node.appendChild(frame_child)
+    return frame_node
+
 transform_map = {
 	'a': {
 		'replace_with': 'text:a',
@@ -126,6 +139,6 @@ transform_map = {
     },
     
     'img': {
-        'replace_with': 'draw:frame'
+        'replace_with': transform_img
     }
 }
