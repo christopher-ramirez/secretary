@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import re
 import os
 from xml.dom.minidom import getDOMImplementation
-from unittest import TestCase
+from unittest import TestCase, main
 from secretary import UndefinedSilently, pad_string, Renderer
 
 def test_undefined_silently():
@@ -75,3 +76,42 @@ class RenderTestCase(TestCase):
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
 
+class MarkdownFilterTestCase(TestCase):
+    def setUp(self):
+        self.engine = Renderer()
+        self.engine.template_images = {}
+
+    def test_paragraphs(self):
+        test_samples = {
+            'hello\n\n\nworld\n': 2,
+            'hello world': 1,
+        }
+        pattern = r'<text:p text:style-name="Standard">[a-z ]+</text:p>'
+        for test, occurances in test_samples.items():
+            result = self.engine.markdown_filter(test)
+            found = re.findall(pattern , result)
+            assert len(found) == occurances
+    
+    def test_images(self):
+        test_samples = {
+            'Hello world ![sample](samples/images/writer.png)\n': 1,
+            '![sample](samples/images/writer.png)\n': 1,
+            '![sample](samples/images/writer.png)\n![sample](samples/images/writer.png)\n': 2,
+        }
+        pattern = '<draw:frame draw:name="[0-9a-z]+"><draw:image/></draw:frame>'
+        for test, occurances in test_samples.items():
+            result = self.engine.markdown_filter(test)
+            found = re.findall(pattern , result)
+            assert len(found) == occurances
+    
+    def test_footnotes(self):
+        test_samples = {
+            'hello world. [^1]\n\n[^1]: referenced.\n\n': '<text:p text:style-name="Standard">hello world. <text:note text:id="fn-1" text:note-class="footnote"><text:note-citation>1</text:note-citation><text:note-body><text:p>referenced. </text:p></text:note-body></text:note></text:p>',
+            'foo. [^1]\n bar. [^2] \n\n[^1]: referenced by foo.\n[^2]: referenced by bar\n': '<text:p text:style-name="Standard">foo. <text:note text:id="fn-1" text:note-class="footnote"><text:note-citation>1</text:note-citation><text:note-body><text:p>referenced by foo. </text:p></text:note-body></text:note> bar. <text:note text:id="fn-2" text:note-class="footnote"><text:note-citation>2</text:note-citation><text:note-body><text:p>referenced by bar </text:p></text:note-body></text:note> </text:p>',
+            }
+        for test, expected in test_samples.items():
+            result = self.engine.markdown_filter(test)
+            assert expected in result
+
+if __name__ == '__main__':
+    main()

@@ -103,6 +103,34 @@ Secretary allows you to use placeholder images in templates that will be replace
 > To change image name, right click under image, select "Picture..." from the popup menu and navigate to
 "Options" tab.
 
+
+### Image Markdown Support
+
+It is also possible to use `markdown` filter to put Images into your template file. for example:
+
+
+```python
+from secretary import Renderer
+
+engine = Renderer()
+
+res=engine.render('simple_template.odt',
+                  document=dict(md_sample="\n\n![writer.png](samples/images/writer.png)\n\n "))
+with open('rendered_document.odt', 'wb') as f:
+    f.write(res)
+```
+
+To resize the inserted image properly, **Open Document Format** uses `inch` unit over `pixel`! to convert image's size from pixels to inch, you need to know the dpi of the device you're working with. the default value for dpi is set to 200, but you can change it by passing a `_dpi` value to render method.
+
+```python
+# set Image's dpi to 300
+res=engine.render('simple_template.odt',
+                  _dpi=300))
+with open('rendered_document.odt', 'wb') as f:
+    f.write(res)
+```
+
+
 #### Media loader
 To load image data, Secretary needs a media loader. The engine by default provides a file system loader which takes the variable value (specified in image name). This value can be a file object containing an image or an absolute or a relative filename to `media_path` passed at `Renderer` instance creation.
 
@@ -137,6 +165,19 @@ See *Image Support* section above.
 Convert the value, a markdown formated string, into a ODT formated text. Example:
 
         {{ invoice.description|markdown }}
+
+
+Supported elements are:
+
+* Headings
+* links
+* paragraphs
+* Bold, Italic, Strong, ...
+* image
+* lists (Ordered/Unordered)
+* Code
+* Footnotes
+
 
 - **pad(value, length)**
 Pad zeroes to `value` to the left until output value's length be equal to `length`. Default length if 5. Example:
