@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import re
 import os
 from xml.dom.minidom import getDOMImplementation
-from unittest import TestCase
+from unittest import TestCase, main
 from secretary import UndefinedSilently, pad_string, Renderer
 
 def test_undefined_silently():
@@ -75,3 +76,34 @@ class RenderTestCase(TestCase):
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
 
+class MarkdownFilterTestCase(TestCase):
+    def setUp(self):
+        self.engine = Renderer()
+        self.engine.template_images = {}
+
+    def test_paragraphs(self):
+        test_samples = {
+            'hello\n\n\nworld\n': 2,
+            'hello world': 1,
+        }
+        pattern = r'<text:p text:style-name="Standard">[a-z ]+</text:p>'
+        for test, occurances in test_samples.items():
+            result = self.engine.markdown_filter(test)
+            found = re.findall(pattern , result)
+            assert len(found) == occurances
+    
+    def test_images(self):
+        test_samples = {
+            'Hello world ![sample](samples/images/writer.png)\n': 1,
+            '![sample](samples/images/writer.png)\n': 1,
+            '![sample](samples/images/writer.png)\n![sample](samples/images/writer.png)\n': 2,
+        }
+        pattern = '<draw:frame draw:name="[0-9a-z]+"><draw:image/></draw:frame>'
+        for test, occurances in test_samples.items():
+            result = self.engine.markdown_filter(test)
+            found = re.findall(pattern , result)
+            assert len(found) == occurances
+    
+
+if __name__ == '__main__':
+    main()
