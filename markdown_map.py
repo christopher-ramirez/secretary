@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
 from random import randint
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    OrderedDict = dict
 # Transform map used by the markdown filter. transform_map have
 # instructions of how to transform a HTML style tag into a ODT document
 # styled tag. Some ODT tags may need extra attributes; these are defined
@@ -112,7 +115,7 @@ def transform_sup(renderer, xml_object, html_node):
 # Some Elements should be transfermed before others (like footnotes) by using OrderedDict.
 transform_map = OrderedDict([
     ('sup', {
-        'replace_with': transform_sup,
+        'replace_with': 'transform_sup',
     }),
     
     ('div', {
