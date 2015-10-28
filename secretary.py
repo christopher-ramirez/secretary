@@ -700,7 +700,6 @@ class Renderer(object):
 
                 # Tra
                 if tag == 'img':
-                    print('HERE')
                     image_src = html_node.getAttribute('src')
                     # register image to be Transfered later using propper media loader.
                     _key = self.image_filter(image_src)
@@ -709,7 +708,6 @@ class Renderer(object):
                     # draw:frame needs a child `draw:image` node
                     odt_child = xml_object.createElement('draw:image')
                     odt_node.appendChild(odt_child)
-                    continue
                 
                 # Transfer child nodes
                 if html_node.hasChildNodes():
