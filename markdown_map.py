@@ -115,7 +115,7 @@ def transform_sup(renderer, xml_object, html_node):
 # Some Elements should be transfermed before others (like footnotes) by using OrderedDict.
 transform_map = OrderedDict([
     ('sup', {
-        'replace_with': 'transform_sup',
+        'replace_with': transform_sup,
     }),
     
     ('div', {
