@@ -156,7 +156,7 @@ class Renderer(object):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
         # and return a dict with every file in the archive
         self.log.debug('Unpacking template file')
-        
+
         archive_files = {}
         archive = zipfile.ZipFile(template, 'r')
         for zfile in archive.filelist:
@@ -187,18 +187,18 @@ class Renderer(object):
         For each field we found we do:
         * if field is a print field ({{ field }}), we replace it with a
           <text:span> node.
-        
+
         * if field is a control flow ({% %}), then we find immediate node of
           type indicated in field's `text:description` attribute and replace
           the whole node and its childrens with field's content.
-        
+
           If `text:description` attribute starts with `before::` or `after::`,
           then we move field content before or after the node in description.
-        
+
           If no `text:description` is available, find the immediate common
-          parent of this and any other field and replace its child and 
+          parent of this and any other field and replace its child and
           original parent of field with the field content.
-        
+
           e.g.: original
           <table>
               <table:row>
@@ -211,7 +211,7 @@ class Renderer(object):
                   <field>{% endfor %}</field>
               </table:row>
           </table>
-          
+
           After processing:
           <table>
               {% for bar in bars %}
@@ -399,14 +399,14 @@ class Renderer(object):
             frame_attrs = dict()
             for i in xrange(frame.attributes.length):
                 attr = frame.attributes.item(i)
-                frame_attrs[attr.name] = attr.value 
+                frame_attrs[attr.name] = attr.value
 
             # Get child draw:image node and its attrs
             image_node = frame.childNodes[0]
             image_attrs = dict()
             for i in xrange(image_node.attributes.length):
                 attr = image_node.attributes.item(i)
-                image_attrs[attr.name] = attr.value 
+                image_attrs[attr.name] = attr.value
 
             # Request to media loader the image to use
             image = self.media_callback(self.template_images[key]['value'],
@@ -419,7 +419,7 @@ class Renderer(object):
             # media_callback call)
             for k, v in frame_attrs.items():
                 frame.setAttribute(k, v)
-                
+
             for k, v in image_attrs.items():
                 image_node.setAttribute(k, v)
 
@@ -463,7 +463,7 @@ class Renderer(object):
             self.log.error('Error rendering template:\n%s',
                            xml_document.toprettyxml(), exc_info=True)
 
-            self.log.error('Unescaped template was:\n{}'.format(template_string))
+            self.log.error('Unescaped template was:\n{0}'.format(template_string))
             raise
         finally:
             self.log.debug('Rendering xml object finished')
@@ -487,10 +487,10 @@ class Renderer(object):
 
         # Keep content and styles object since many functions or
         # filters may work with then
-        self.content  = parseString(self.files['content.xml']) 
+        self.content  = parseString(self.files['content.xml'])
         self.styles   = parseString(self.files['styles.xml'])
         self.manifest = parseString(self.files['META-INF/manifest.xml'])
-        
+
         # Render content.xml keeping just 'office:body' node.
         rendered_content = self._render_xml(self.content, **kwargs)
         self.content.getElementsByTagName('office:document-content')[0].replaceChild(
@@ -506,7 +506,7 @@ class Renderer(object):
         self.files['content.xml']           = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
         self.files['styles.xml']            = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
         self.files['META-INF/manifest.xml'] = self.manifest.toxml().encode('ascii', 'xmlcharrefreplace')
-        
+
         document = self._pack_document(self.files)
         return document.getvalue()
 
@@ -568,7 +568,7 @@ class Renderer(object):
 
         self.inc_node_fields_count(node.parentNode, field_type)
 
-    
+
     def get_style_by_name(self, style_name):
         """
             Search in <office:automatic-styles> for style_name.
