@@ -140,6 +140,8 @@ class Renderer(object):
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
 
+        self._compile_tags_expressions()
+
 
     def media_loader(self, callback):
         """This sets the the media loader. A user defined function which
@@ -203,24 +205,36 @@ class Renderer(object):
         Renderer._inc_node_tags_count(node.parentNode, is_block)
 
 
-    @staticmethod
-    def _is_jinja_tag(tag):
+    def _compile_tags_expressions(self):
+        self.tag_pattern = re.compile(r'(?is)^({0}|{1}).*({2}|{3})$'.format(
+            self.environment.variable_start_string,
+            self.environment.block_start_string,
+            self.environment.variable_end_string,
+            self.environment.block_end_string
+        ))
+
+        self.block_pattern = re.compile(r'(?is)^{0}.*{1}$'.format(
+            self.environment.block_start_string,
+            self.environment.block_end_string
+        ))
+
+
+    def _is_jinja_tag(self, tag):
         """
             Returns True is tag (str) is a valid jinja instruction tag.
         """
-        return re.findall(r'(?is)^{[{|%].*[%|}]}$', tag)
+
+        return self.tag_pattern.findall(tag)
 
 
-    @staticmethod
-    def _is_block_tag(tag):
+    def _is_block_tag(self, tag):
         """
             Returns True is tag (str) is a jinja flow control tag.
         """
-        return re.findall(r'(?is)^{%[^{}]*%}$', tag)
+        return self.block_pattern.findall(tag)
 
 
-    @staticmethod
-    def _tags_in_document(document):
+    def _tags_in_document(self, document):
         """
             Yields a list of available jinja instructions tags in document.
         """
@@ -231,25 +245,24 @@ class Renderer(object):
                 continue
 
             content = tag.childNodes[0].data.strip()
-            if not Renderer._is_jinja_tag(content):
+            if not self._is_jinja_tag(content):
                 continue
 
             yield tag
 
 
-    @staticmethod
-    def _census_tags(document):
+    def _census_tags(self, document):
         """
         Make a census of all available jinja tags in document. We count all
         the children tags nodes within their parents. This process is necesary
         to automaticaly avoid generating invalid documents when mixing block
         tags in differents parts of a document.
         """
-        for tag in Renderer._tags_in_document(document):
+        for tag in self._tags_in_document(document):
             content = tag.childNodes[0].data.strip()
             block_tag = re.findall(r'(?is)^{%[^{}]*%}$', content)
 
-            Renderer._inc_node_tags_count(tag.parentNode, block_tag)
+            self._inc_node_tags_count(tag.parentNode, block_tag)
 
 
     def  _prepare_document_tags(self, document):
