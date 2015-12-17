@@ -182,7 +182,77 @@ class Renderer(object):
 
         return zip_file
 
-    def _prepare_template_tags(self, xml_document):
+
+    @staticmethod
+    def _inc_node_tags_count(node, is_block=False):
+        """ Increase field count of node and its parents """
+
+        if node is None:
+            return
+
+        for attr in ['field_count', 'block_count', 'var_count']:
+            if not hasattr(node, attr):
+                setattr(node, attr, 0)
+
+        node.field_count += 1
+        if is_block:
+            node.block_count += 1
+        else:
+            node.var_count += 1
+
+        Renderer._inc_node_tags_count(node.parentNode, is_block)
+
+
+    @staticmethod
+    def _is_jinja_tag(tag):
+        """
+            Returns True is tag (str) is a valid jinja instruction tag.
+        """
+        return re.findall(r'(?is)^{[{|%].*[%|}]}$', tag)
+
+
+    @staticmethod
+    def _is_block_tag(tag):
+        """
+            Returns True is tag (str) is a jinja flow control tag.
+        """
+        return re.findall(r'(?is)^{%[^{}]*%}$', tag)
+
+
+    @staticmethod
+    def _tags_in_document(document):
+        """
+            Yields a list of available jinja instructions tags in document.
+        """
+        tags = document.getElementsByTagName('text:text-input')
+
+        for tag in tags:
+            if not tag.hasChildNodes():
+                continue
+
+            content = tag.childNodes[0].data.strip()
+            if not Renderer._is_jinja_tag(content):
+                continue
+
+            yield tag
+
+
+    @staticmethod
+    def _census_tags(document):
+        """
+        Make a census of all available jinja tags in document. We count all
+        the children tags nodes within their parents. This process is necesary
+        to automaticaly avoid generating invalid documents when mixing block
+        tags in differents parts of a document.
+        """
+        for tag in Renderer._tags_in_document(document):
+            content = tag.childNodes[0].data.strip()
+            block_tag = re.findall(r'(?is)^{%[^{}]*%}$', content)
+
+            Renderer._inc_node_tags_count(tag.parentNode, block_tag)
+
+
+    def  _prepare_document_tags(self, document):
         """ Here we search for every field node present in xml_document.
         For each field we found we do:
         * if field is a print field ({{ field }}), we replace it with a
@@ -222,82 +292,65 @@ class Renderer(object):
           </table>
         """
 
-        self.log.debug('Preparing template tags')
-        fields = xml_document.getElementsByTagName('text:text-input')
+        # -------------------------------------------------------------------- #
+        # We have to replace a node, let's call it "placeholder", with the
+        # content of our jinja tag. The placeholder can be a node with all its
+        # children. Node's "text:description" attribute indicates how far we
+        # can scale up in the tree hierarchy to get our placeholder node. When
+        # said attribute is not present, then we scale up until we find a
+        # common parent for this tag and any other tag.
+        # -------------------------------------------------------------------- #
+        self.log.debug('Preparing document tags')
+        self._census_tags(document)
 
-        # First, count secretary fields
-        for field in fields:
-            if not field.hasChildNodes():
-                continue
+        for tag in self._tags_in_document(document):
+            placeholder = tag
+            content = tag.childNodes[0].data.strip()
+            is_block = self._is_block_tag(content)
+            scale_to = tag.getAttribute('text:description').strip().lower()
 
-            field_content = field.childNodes[0].data.strip()
+            if content.lower().find('|markdown') > 0:
+                # Take whole paragraph when handling a markdown field
+                scale_to = 'text:p'
 
-            if not re.findall(r'(?is)^{[{|%].*[%|}]}$', field_content):
-                # Field does not contains jinja template tags
-                continue
+            if scale_to:
+                if FLOW_REFERENCES.get(scale_to, False):
+                    placeholder = self._parent_of_type(
+                        tag, FLOW_REFERENCES[scale_to]
+                    )
 
-            is_block_tag = re.findall(r'(?is)^{%[^{}]*%}$', field_content)
-            self.inc_node_fields_count(field.parentNode,
-                    'block' if is_block_tag else 'variable')
+                new_node = self.create_text_node(document, content)
 
-        # Do field replacement and moving
-        for field in fields:
-            if not field.hasChildNodes():
-                continue
+            elif is_block:
+                # expand up the placeholder until a shared parent is found
+                while not placeholder.parentNode.field_count > 1:
+                    placeholder = placeholder.parentNode
 
-            field_content = field.childNodes[0].data.strip()
-
-            if not re.findall(r'(?is)^{[{|%].*[%|}]}$', field_content):
-                # Field does not contains jinja template tags
-                continue
-
-            is_block_tag = re.findall(r'(?is)^{%[^{}]*%}$', field_content)
-            discard = field
-            field_reference = field.getAttribute('text:description').strip().lower()
-
-            if re.findall(r'\|markdown', field_content):
-                # a markdown field should take the whole paragraph
-                field_reference = 'text:p'
-
-            if field_reference:
-                # User especified a reference. Replace immediate parent node
-                # of type indicated in reference with this field's content.
-                node_type = FLOW_REFERENCES.get(field_reference, False)
-                if node_type:
-                    discard = self._parent_of_type(field, node_type)
-
-                jinja_node = self.create_text_node(xml_document, field_content)
-
-            elif is_block_tag:
-                # Find the common immediate parent of this and any other field.
-                while discard.parentNode.secretary_field_count <= 1:
-                    discard = discard.parentNode
-
-                if discard is not None:
-                    jinja_node = self.create_text_node(xml_document,
-                                                       field_content)
+                if placeholder:
+                    new_node = self.create_text_node(document, content)
 
             else:
-                jinja_node = self.create_text_span_node(xml_document,
-                                                        field_content)
+                new_node = self.create_text_span_node(document, content)
 
-            parent = discard.parentNode
-            if not field_reference.startswith('after::'):
-                parent.insertBefore(jinja_node, discard)
+            placeholder_parent = placeholder.parentNode
+            if not scale_to.startswith('after::'):
+                placeholder_parent.insertBefore(new_node, placeholder)
             else:
-                if discard.isSameNode(parent.lastChild):
-                    parent.appendChild(jinja_node)
+                if placeholder.isSameNode(placeholder_parent.lastChild):
+                    placeholder_parent.appendChild(new_node)
                 else:
-                    parent.insertBefore(jinja_node,
-                                        discard.nextSibling)
+                    placeholder_parent.insertBefore(
+                        new_node, placeholder.nextSibling
+                    )
 
-            if field_reference.startswith(('after::', 'before::')):
-                # Do not remove whole field container. Just remove the
-                # <text:text-input> parent node if field has it.
-                discard = self._parent_of_type(field, 'text:p')
-                parent = discard.parentNode
+            if scale_to.startswith(('after::', 'before::')):
+                # Don't remove whole field tag, only "text:text-input" container
+                placeholder = self._parent_of_type(tag, 'text:p')
+                placeholder_parent = placeholder.parentNode
 
-            parent.removeChild(discard)
+
+            # Finally, remove the placeholder
+            placeholder_parent.removeChild(placeholder)
 
 
     @staticmethod
@@ -323,7 +376,9 @@ class Renderer(object):
 
     @staticmethod
     def _encode_escape_chars(xml_text):
-        # Replace line feed and/or tabs within text span entities.
+        """
+        Replace line feed and/or tabs within text:span entities.
+        """
         find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t])[^<]*?)</text:\1>'
         for m in re.findall(find_pattern, xml_text):
             replacement = m[1].replace('\n', '<text:line-break/>')
@@ -334,8 +389,10 @@ class Renderer(object):
 
 
     def add_media_to_archive(self, media, mime, name=''):
-        """Adds to "Pictures" archive folder the file in `media` and register
-        it into manifest file."""
+        """
+        Adds to "Pictures" archive folder the file in `media` and register
+        it into manifest file.
+        """
         extension = None
         if hasattr(media, 'name') and not name:
             extension = path.splitext(media.name)
@@ -440,10 +497,11 @@ class Renderer(object):
     def _render_xml(self, xml_document, **kwargs):
         # Prepare the xml object to be processed by jinja2
         self.log.debug('Rendering XML object')
+        template_string = ""
 
         try:
             self.template_images = dict()
-            self._prepare_template_tags(xml_document)
+            self._prepare_document_tags(xml_document)
             template_string = self._unescape_entities(xml_document.toxml())
             jinja_template = self.environment.from_string(template_string)
 
@@ -544,29 +602,6 @@ class Renderer(object):
         Creates a text node
         """
         return xml_document.createTextNode(text)
-
-    def inc_node_fields_count(self, node, field_type='variable'):
-        """ Increase field count of node and its parents """
-
-        if node is None:
-            return
-
-        if not hasattr(node, 'secretary_field_count'):
-            setattr(node, 'secretary_field_count', 0)
-
-        if not hasattr(node, 'secretary_variable_count'):
-            setattr(node, 'secretary_variable_count', 0)
-
-        if not hasattr(node, 'secretary_block_count'):
-            setattr(node, 'secretary_block_count', 0)
-
-        node.secretary_field_count += 1
-        if field_type == 'variable':
-            node.secretary_variable_count += 1
-        else:
-            node.secretary_block_count += 1
-
-        self.inc_node_fields_count(node.parentNode, field_type)
 
 
     def get_style_by_name(self, style_name):
