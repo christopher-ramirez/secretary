@@ -9,8 +9,8 @@ Secretary
     variable printing and control flow.
 
     To render a template:
-        engine = Renderer(template_file)
-        result = engine.render(template_var1=...)
+        engine = Renderer()
+        result = engine.render(template_file, foo=bar, ...)
 
 
     Copyright (c) 2012-2015 By:
@@ -19,7 +19,7 @@ Secretary
         * Anton Kochnev (github.com/ak04nv)
         * DieterBuys (github.com/DieterBuys)
 
-    * Licensed under the MIT license.
+    Licensed under the MIT license.
 """
 
 from __future__ import unicode_literals, print_function
