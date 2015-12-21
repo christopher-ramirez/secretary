@@ -1,8 +1,6 @@
-#!/usr/bin/python
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 
-# * Copyright (c) 2012-2014 Christopher Ramirez chris.ramirezg@gmail.com
-# *
-# * Licensed under the MIT license.
 
 """
 Secretary
@@ -13,6 +11,15 @@ Secretary
     To render a template:
         engine = Renderer(template_file)
         result = engine.render(template_var1=...)
+
+
+    Copyright (c) 2012-2015 By:
+        * Christopher Ramirez <chris.ramirezg@gmail.com>
+        * Andrés Reyes Monge (github.com/armonge)
+        * Anton Kochnev (github.com/ak04nv)
+        * DieterBuys (github.com/DieterBuys)
+
+    * Licensed under the MIT license.
 """
 
 from __future__ import unicode_literals, print_function
