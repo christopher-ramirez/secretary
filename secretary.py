@@ -108,16 +108,15 @@ class Renderer(object):
         compatible template.
 
         Basic use example:
-            engine = Renderer('template')
-            result = engine.render()
+            engine = Renderer()
+            result = engine.render(template, var1=val1, var2=val2, ...)
 
 
-        Renderer provides an enviroment variable which can be used
-        to provide custom filters to the ODF render.
-
-            engine = Renderer('template.odt')
-            engine.environment.filters['custom_filer'] = filter_function
-            result = engine.render()
+        Renderer provides an environment property which should be used
+        to add custom filters to the ODF render.
+            engine = Renderer()
+            engine.environment.filters['custom_filter'] = filterFn
+            result = engine.render('template.odt', var1=val1, ...)
     """
 
     def __init__(self, environment=None, **kwargs):
@@ -125,11 +124,9 @@ class Renderer(object):
         Create a Renderer instance.
 
         args:
-            environment: Use this jinja2 enviroment. If not specified, we
+            environment: Use this jinja2 environment. If not specified, we
                          create a new environment for this class instance.
 
-        returns:
-            None
         """
         self.log = logging.getLogger(__name__)
         self.log.debug('Initing a Renderer instance\nTemplate')
