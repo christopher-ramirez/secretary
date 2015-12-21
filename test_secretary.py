@@ -43,12 +43,6 @@ class RenderTestCase(TestCase):
             '{{ a &lt; b }}'                                 : '{{ a < b }}',
             '{% a|filter &lt; b %}'                          : '{% a|filter < b %}',
             '<node>{% a == b %}</node>{% else if a &lt; b %}': '<node>{% a == b %}</node>{% else if a < b %}',
-            
-            # test scapig of multiple spaces, even encoded as <text:space> nodes
-            '{{ if  <text:s> multiple_spaces }}'                      : '{{ if    multiple_spaces }}',
-            '{{ if  </text:s> multiple_spaces }}'                     : '{{ if    multiple_spaces }}',
-            '{{ if  <text:s/> multiple_spaces }}'                     : '{{ if    multiple_spaces }}',
-            '{{ if <text:span/>[1,2,3]<text:span>&lt;</text:span>2 }}': '{{ if  [1,2,3] < 2 }}',
         }
 
         for test, expect in test_samples.items():

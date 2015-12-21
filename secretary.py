@@ -218,6 +218,31 @@ class Renderer(object):
             self.environment.block_end_string
         ))
 
+        self._compile_escape_expressions()
+
+
+    def _compile_escape_expressions(self):
+        # Compiles escape expressions
+        self.escape_map = dict()
+        unescape_rules = {
+            r'&gt;'         : r'>',
+            r'&lt;'         : r'<',
+            r'&amp;'        : r'&',
+            r'&quot;'       : r'"',
+        }
+
+        for key, value in unescape_rules.items():
+            exp = r'(?is)(({0}|{1}).*?)({2})(.*?({3}|{4}))'
+            key = re.compile(exp.format(
+                self.environment.variable_start_string,
+                self.environment.block_start_string,
+                key,
+                self.environment.variable_end_string,
+                self.environment.block_end_string
+            ))
+
+            self.escape_map[key] = r'\1{0}\4'.format(value)
+
 
     def _is_jinja_tag(self, tag):
         """
@@ -366,24 +391,16 @@ class Renderer(object):
             placeholder_parent.removeChild(placeholder)
 
 
-    @staticmethod
-    def _unescape_entities(xml_text):
+    def _unescape_entities(self, xml_text):
         """
-        Strips tags of the form <text:span ...> from inside Jinja elements
-        and unescapes HTML codes for >, <, & and "
+        Unescape '&amp;', '&lt;', '&quot;' and '&gt;' within jinja instructions.
+        The regexs rules used here are compiled in _compile_escape_expressions.
         """
-        unescape_rules = {
-            r'(?is)({([{%])[^%}]*?)(</?text:s.*?>)(.*?[%}]})': r'\1 \4',
-            r'(?is)({([{%])[^%}]*?)(&gt;)(.*?[%}]})'         : r'\1>\4',
-            r'(?is)({([{%])[^%}]*?)(&lt;)(.*?[%}]})'         : r'\1<\4',
-            r'(?is)({([{%])[^%}]*?)(&amp;)(.*?[%}]})'        : r'\1&\4',
-            r'(?is)({([{%])[^%}]*?)(&quot;)(.*?[%}]})'       : r'\1"\4',
-        }
-
-        for regexp, replacement in unescape_rules.items():
-            subs_made = True
-            while subs_made:
-                xml_text, subs_made = re.subn(regexp, replacement, xml_text)
+        for regexp, replacement in self.escape_map.items():
+            while True:
+                xml_text, substitutions = regexp.subn(replacement, xml_text)
+                if not substitutions:
+                    break
 
         return xml_text
 
