@@ -1,5 +1,5 @@
  # * Copyright (c) 2012 - 2015
- #   * Christopher Ramírez chris.ramirezg [at} gmail (dot] com.
+ #   * Christopher Ramírez <chris.ramirezg@gmail.com>
  #   * Andrés Reyes Monge (github.com/armonge)
  #   * Anton Kochnev (github.com/ak04nv)
  #   * DieterBuys (github.com/DieterBuys)
