@@ -289,7 +289,7 @@ class Renderer(object):
         """
         for tag in self._tags_in_document(document):
             content = tag.childNodes[0].data.strip()
-            block_tag = re.findall(r'(?is)^{%[^{}]*%}$', content)
+            block_tag = self._is_block_tag(content)
 
             self._inc_node_tags_count(tag.parentNode, block_tag)
 
