@@ -253,14 +253,14 @@ class Renderer(object):
             Returns True is tag (str) is a valid jinja instruction tag.
         """
 
-        return self.tag_pattern.findall(tag)
+        return len(self.tag_pattern.findall(tag)) > 0
 
 
     def _is_block_tag(self, tag):
         """
             Returns True is tag (str) is a jinja flow control tag.
         """
-        return self.block_pattern.findall(tag)
+        return len(self.block_pattern.findall(tag)) > 0
 
 
     def _tags_in_document(self, document):
