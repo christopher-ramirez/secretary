@@ -63,6 +63,16 @@ class RenderTestCase(TestCase):
         for test, expect in test_samples.items():
             assert self.engine._encode_escape_chars(test) == expect
 
+
+    def _test_is_jinja_tag(self):
+        assert self._is_jinja_tag('{{ foo }}')==True
+        assert self._is_jinja_tag('{ foo }')==False
+
+    def _test_is_block_tag(self):
+        assert self._is_block_tag('{% if True %}')==True
+        assert self._is_block_tag('{{ foo }}')==False
+        assert self._is_block_tag('{ foo }')==False
+
     def test_create_test_node(self):
         assert self.engine.create_text_node(self.document, 'text').toxml() == 'text'
 
