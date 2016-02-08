@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import os
 from xml.dom.minidom import getDOMImplementation
 from unittest import TestCase
-from secretary import UndefinedSilently, pad_string, Renderer
+from secretary.secretary import UndefinedSilently, pad_string, Renderer
 
 def test_undefined_silently():
     undefined = UndefinedSilently()
@@ -43,7 +43,7 @@ class RenderTestCase(TestCase):
             '{{ a &lt; b }}'                                 : '{{ a < b }}',
             '{% a|filter &lt; b %}'                          : '{% a|filter < b %}',
             '<node>{% a == b %}</node>{% else if a &lt; b %}': '<node>{% a == b %}</node>{% else if a < b %}',
-            
+
             # test scapig of multiple spaces, even encoded as <text:space> nodes
             '{{ if  <text:s> multiple_spaces }}'                      : '{{ if    multiple_spaces }}',
             '{{ if  </text:s> multiple_spaces }}'                     : '{{ if    multiple_spaces }}',
@@ -74,4 +74,3 @@ class RenderTestCase(TestCase):
 
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
-

@@ -36,7 +36,7 @@ setup(
     packages=['secretary'],
     platforms='any',
     install_requires=[
-        'Jinja2', 'markdown2'
+        'Jinja2', 'markdown2', 'ordereddict'
     ],
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
