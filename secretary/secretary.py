@@ -29,6 +29,9 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined
 
+from .utils import UndefinedSilently, pad_string
+from .errors import SecretaryError
+
 try:
     if sys.version_info.major == 3:
         xrange = range
@@ -62,28 +65,6 @@ FLOW_REFERENCES = {
     'after::cell'        : 'table:table-cell',
 }
 
-# ---- Exceptions
-class SecretaryError(Exception):
-    pass
-
-class UndefinedSilently(Undefined):
-    # Silently undefined,
-    # see http://stackoverflow.com/questions/6182498
-    def silently_undefined(*args, **kwargs):
-        return ''
-
-    return_new = lambda *args, **kwargs: UndefinedSilently()
-
-    __unicode__ = silently_undefined
-    __str__ = silently_undefined
-    __call__ = return_new
-    __getattr__ = return_new
-
-# ************************************************
-#
-#           SECRETARY FILTERS
-#
-# ************************************************
 
 def media_loader(f):
     def wrapper(*args, **kwargs):
@@ -91,9 +72,6 @@ def media_loader(f):
 
     return wrapper
 
-def pad_string(value, length=5):
-    value = str(value)
-    return value.zfill(length)
 
 class Renderer(object):
     """
@@ -113,7 +91,7 @@ class Renderer(object):
             result = engine.render()
     """
 
-    def __init__(self, environment=None, **kwargs):
+    def __init__(self, environment=None, markdown_extras=None, **kwargs):
         """
         Create a Renderer instance.
 
@@ -137,9 +115,9 @@ class Renderer(object):
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
 
+        self.markdown_extras = markdown_extras or []
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
-
 
     def media_loader(self, callback):
         """This sets the the media loader. A user defined function which
@@ -156,7 +134,7 @@ class Renderer(object):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
         # and return a dict with every file in the archive
         self.log.debug('Unpacking template file')
-        
+
         archive_files = {}
         archive = zipfile.ZipFile(template, 'r')
         for zfile in archive.filelist:
@@ -187,18 +165,18 @@ class Renderer(object):
         For each field we found we do:
         * if field is a print field ({{ field }}), we replace it with a
           <text:span> node.
-        
+
         * if field is a control flow ({% %}), then we find immediate node of
           type indicated in field's `text:description` attribute and replace
           the whole node and its childrens with field's content.
-        
+
           If `text:description` attribute starts with `before::` or `after::`,
           then we move field content before or after the node in description.
-        
+
           If no `text:description` is available, find the immediate common
-          parent of this and any other field and replace its child and 
+          parent of this and any other field and replace its child and
           original parent of field with the field content.
-        
+
           e.g.: original
           <table>
               <table:row>
@@ -211,7 +189,7 @@ class Renderer(object):
                   <field>{% endfor %}</field>
               </table:row>
           </table>
-          
+
           After processing:
           <table>
               {% for bar in bars %}
@@ -299,7 +277,6 @@ class Renderer(object):
 
             parent.removeChild(discard)
 
-
     @staticmethod
     def _unescape_entities(xml_text):
         """
@@ -332,7 +309,6 @@ class Renderer(object):
 
         return xml_text
 
-
     def add_media_to_archive(self, media, mime, name=''):
         """Adds to "Pictures" archive folder the file in `media` and register
         it into manifest file."""
@@ -358,7 +334,6 @@ class Renderer(object):
 
         return media_path
 
-
     def fs_loader(self, media, *args, **kwargs):
         """Loads a file from the file system.
         :param media: A file object or a relative or absolute path of a file.
@@ -381,7 +356,6 @@ class Renderer(object):
         mime = guess_type(filename)
         return (open(filename, 'rb'), mime[0] if mime else None)
 
-
     def replace_images(self, xml_document):
         """Perform images replacements"""
         self.log.debug('Inserting images')
@@ -399,14 +373,14 @@ class Renderer(object):
             frame_attrs = dict()
             for i in xrange(frame.attributes.length):
                 attr = frame.attributes.item(i)
-                frame_attrs[attr.name] = attr.value 
+                frame_attrs[attr.name] = attr.value
 
             # Get child draw:image node and its attrs
             image_node = frame.childNodes[0]
             image_attrs = dict()
             for i in xrange(image_node.attributes.length):
                 attr = image_node.attributes.item(i)
-                image_attrs[attr.name] = attr.value 
+                image_attrs[attr.name] = attr.value
 
             # Request to media loader the image to use
             image = self.media_callback(self.template_images[key]['value'],
@@ -419,7 +393,7 @@ class Renderer(object):
             # media_callback call)
             for k, v in frame_attrs.items():
                 frame.setAttribute(k, v)
-                
+
             for k, v in image_attrs.items():
                 image_node.setAttribute(k, v)
 
@@ -468,7 +442,6 @@ class Renderer(object):
         finally:
             self.log.debug('Rendering xml object finished')
 
-
     def render(self, template, **kwargs):
         """
             Render a template
@@ -487,10 +460,10 @@ class Renderer(object):
 
         # Keep content and styles object since many functions or
         # filters may work with then
-        self.content  = parseString(self.files['content.xml']) 
+        self.content  = parseString(self.files['content.xml'])
         self.styles   = parseString(self.files['styles.xml'])
         self.manifest = parseString(self.files['META-INF/manifest.xml'])
-        
+
         # Render content.xml keeping just 'office:body' node.
         rendered_content = self._render_xml(self.content, **kwargs)
         self.content.getElementsByTagName('office:document-content')[0].replaceChild(
@@ -506,10 +479,9 @@ class Renderer(object):
         self.files['content.xml']           = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
         self.files['styles.xml']            = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')
         self.files['META-INF/manifest.xml'] = self.manifest.toxml().encode('ascii', 'xmlcharrefreplace')
-        
+
         document = self._pack_document(self.files)
         return document.getvalue()
-
 
     def _parent_of_type(self, node, of_type):
         # Returns the first immediate parent of type `of_type`.
@@ -568,7 +540,6 @@ class Renderer(object):
 
         self.inc_node_fields_count(node.parentNode, field_type)
 
-    
     def get_style_by_name(self, style_name):
         """
             Search in <office:automatic-styles> for style_name.
@@ -625,7 +596,7 @@ class Renderer(object):
             return ''
 
         from xml.dom import Node
-        from markdown_map import transform_map
+        from .markdown_map import transform_map
 
         try:
             from markdown2 import markdown
@@ -633,7 +604,7 @@ class Renderer(object):
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
         styles_cache = {}   # cache styles searching
-        html_text = markdown(markdown_text)
+        html_text = markdown(markdown_text, extras=self.markdown_extras)
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
@@ -657,8 +628,11 @@ class Renderer(object):
 
                 # Add defined attributes
                 if 'attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['attributes'].items():
-                        odt_node.setAttribute(k, v)
+                    for key, value in transform_map[tag]['attributes'].items():
+                        # Generate attribute value by executing the callable
+                        if callable(value):
+                            value = value()
+                        odt_node.setAttribute(key, value)
 
                     # copy original href attribute in <a> tag
                     if tag == 'a':

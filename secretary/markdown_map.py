@@ -54,14 +54,22 @@ transform_map = OrderedDict([
 		'attributes': {
 			'xlink:type': 'simple',
 			'xlink:href': ''
-		}),
+        }
+	}),
 
     # Paragraphs
     ('p', {
         'replace_with': 'text:p',
         'style_attributes': {
             'style-name': 'Standard'
-        }),
+        }
+    }),
+    ('span', {
+        'replace_with': 'text:span',
+        'style_attributes': {
+            'style-name': 'markdown_span'
+        }
+    }),
 
 
     # Texts
@@ -126,13 +134,15 @@ transform_map = OrderedDict([
     ('ul', {
         'replace_with': 'text:list',
         'attributes': {
-            'xml:id': list_id()
+            # callable, to truely generate unique id
+            'xml:id': list_id
         }
     }),
     ('ol', {
         'replace_with': 'text:list',
         'attributes': {
-            'xml:id': list_id()
+            # callable, to truely generate unique id
+            'xml:id': list_id
         }
     }),
 

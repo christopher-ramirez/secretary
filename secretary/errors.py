@@ -1,0 +1,2 @@
+class SecretaryError(Exception):
+    pass
