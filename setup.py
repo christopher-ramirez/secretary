@@ -27,13 +27,13 @@ class PyTest(TestCommand):
 setup(
     name='secretary',
     version='0.2.7',
-    url='https://github.com/christopher-ramirez/secretary',
+    url='https://github.com/bijanebrahimi/secretary',
     license='MIT',
-    author='Christopher Ramírez',
-    author_email='chris.ramirezg@gmail.com',
+    author='Bijan Ebrahimi',
+    author_email='bijanebrahimi@riseup.net',
     description='Take the power of Jinja2 templates to OpenOffice or LibreOffice.',
     long_description=long_description,
-    py_modules=['secretary', 'markdown_map'],
+    packages=['secretary'],
     platforms='any',
     install_requires=[
         'Jinja2', 'markdown2'
