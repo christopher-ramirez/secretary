@@ -665,9 +665,11 @@ class Renderer(object):
             result = node.toxml()
 
             # linebreaks in all nodes should be converted to <text:line-break/>
+            result = result.replace('\n', '<text:line-break/>')
             result = result.replace('\\n', '<text:line-break/>')
 
             # All double linebreak should be replaced with an empty paragraph
+            result = result.replace('\n\n', '<text:p text:style-name="Standard"/>')
             result = result.replace('\\n\\n', '<text:p text:style-name="Standard"/>')
             return result
 

@@ -6,14 +6,14 @@ def __parse_line(line, xml_object):
     # Find tabs spaces
     nodes = []
     index = 0
-    for matched in re.finditer('(\\\\n|    |\t| )', line):
+    for matched in re.finditer('(\\\\n|\\n|    |\t| )', line):
         start, end = matched.span()
         if start > index:
             chunk = line[index:start]
             obj = xml_object.createTextNode(chunk)
             nodes.append(obj)
         text = matched.group()
-        if text == "\\n":
+        if text in ["\\n", "\\\\n"]:
             obj = xml_object.createElement('text:line-break')
             nodes.append(obj)
         elif text in ['    ', '\t']:

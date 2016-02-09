@@ -183,6 +183,7 @@ Secretary includes some predefined _jinja2_ filters. Included filters are:
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+- **0.3.1**: HOTFIX: removed skip from tests (python2.7)
 - **0.3**: Added Code Highlight using markdown `fenced-code-blocks` extra
 - **0.2.7**: Truly fix regexps used to unscape XML entities present inside Jinja tags.
 - **0.2.6**: **AVOID THIS RELEASE** ~~Fix regexps used to unscape XML entities present inside Jinja tags.~~
