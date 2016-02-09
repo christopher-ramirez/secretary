@@ -39,12 +39,28 @@ class MarkdownFilterTestCase(TestCase):
             assert len(found) == occurances
 
     def test_fenced_code_blocks(self):
+        test = "```python\ndef test():\n    pass\n```"
+        result = self.engine.markdown_filter(test)
+        assert not 'python' in result
+
+    def test_code_blocks(self):
+        test = "```\ndef test():\n    pass\n```"
+        result = self.engine.markdown_filter(test)
+        assert 'codehilite' in result
+
+    def test_code_blocks_indents(self):
         test_samples = {
-            "```python\ndef test():\n    pass\n```": ''
+            "```python\ndef test():\n    if True:\n        pass\n```": 3,
+            "```\ndef test():\n    pass\n```": 1,
         }
-        for test, expected in test_samples.items():
+        for test, occurances in test_samples.items():
             result = self.engine.markdown_filter(test)
-            assert not 'python' in result
+            assert result.count('<text:tab/>') == occurances
+
+    def test_new_line(self):
+        test = "```python\ndef test():\n    pass\n```"
+        result = self.engine.markdown_filter(test)
+        assert not '\n' in result
 
     @skip
     def test_images(self):

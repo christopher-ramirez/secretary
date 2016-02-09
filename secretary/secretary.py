@@ -664,14 +664,12 @@ class Renderer(object):
         def node_to_string(node):
             result = node.toxml()
 
-            # linebreaks in preformated nodes should be converted to <text:line-break/>
-            if (node.__class__.__name__ != 'Text') and \
-                (node.getAttribute('text:style-name') == 'Preformatted_20_Text'):
-                result = result.replace('\n', '<text:line-break/>')
+            # linebreaks in all nodes should be converted to <text:line-break/>
+            result = result.replace('\\n', '<text:line-break/>')
 
             # All double linebreak should be replaced with an empty paragraph
-            return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
-
+            result = result.replace('\\n\\n', '<text:p text:style-name="Standard"/>')
+            return result
 
         return ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
