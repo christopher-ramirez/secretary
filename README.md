@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=development)
+
 # SECRETARY
 ## Take the power of Jinja2 templates to OpenOffice and LibreOffice and create reports in your web applications.
 **Secretary** allows you to use Open Document Text (ODT) files as templates for rendering reports or letters. Secretary is an alternative solution for creating office documents and reports in OpenDocument Text format from templates that can be visually composed using the OpenOffice.org/LibreOffice Writer word processor.
