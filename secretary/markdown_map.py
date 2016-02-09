@@ -6,6 +6,7 @@ except:
     from ordereddict import OrderedDict
 
 from .utils import list_id
+from .transfoms import transform_div, attribute_class
 
 
 # Transform map used by the markdown filter. transform_map have
@@ -48,6 +49,11 @@ common_styles = {
 }
 
 transform_map = OrderedDict([
+    # Divs
+    ('div', {
+		'replace_with': transform_div,
+	}),
+
     # Links
     ('a', {
 		'replace_with': 'text:a',
@@ -67,7 +73,7 @@ transform_map = OrderedDict([
     ('span', {
         'replace_with': 'text:span',
         'style_attributes': {
-            'style-name': 'markdown_span'
+            'style-name': attribute_class
         }
     }),
 

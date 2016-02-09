@@ -614,7 +614,11 @@ class Renderer(object):
         for tag in transform_map:
             html_nodes = xml_object.getElementsByTagName(tag)
             for html_node in html_nodes:
-                odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
+                node_replace_with = transform_map[tag]['replace_with']
+                if callable(node_replace_with):
+                    odt_node = node_replace_with(self, xml_object, html_node)
+                else:
+                    odt_node = xml_object.createElement(node_replace_with)
 
                 # Transfer child nodes
                 if html_node.hasChildNodes():
@@ -623,16 +627,18 @@ class Renderer(object):
 
                 # Add style-attributes defined in transform_map
                 if 'style_attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['style_attributes'].items():
-                        odt_node.setAttribute('text:%s' % k, v)
+                    for style_name, style_value in transform_map[tag]['style_attributes'].items():
+                        if callable(style_value):
+                            style_value = style_value(html_node)
+                        odt_node.setAttribute('text:%s' % style_name, style_value)
 
                 # Add defined attributes
                 if 'attributes' in transform_map[tag]:
-                    for key, value in transform_map[tag]['attributes'].items():
+                    for attr_name, attr_value in transform_map[tag]['attributes'].items():
                         # Generate attribute value by executing the callable
-                        if callable(value):
-                            value = value()
-                        odt_node.setAttribute(key, value)
+                        if callable(attr_value):
+                            attr_value = attr_value(html_node)
+                        odt_node.setAttribute(attr_name, attr_value)
 
                     # copy original href attribute in <a> tag
                     if tag == 'a':
