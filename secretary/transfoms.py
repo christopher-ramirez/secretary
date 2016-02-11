@@ -35,6 +35,8 @@ def transform_div(renderer, xml_object, html_node):
     html_node_class = html_node.getAttribute('class')
     if html_node_class == 'codehilite':
         return transform_codelilite(renderer, xml_object, html_node)
+    elif html_node_class == 'footnotes':
+        return transform_footnotes(renderer, xml_object, html_node)
     return xml_object.createElement('text:p')
 
 
@@ -56,6 +58,43 @@ def transform_codelilite(renderer, xml_object, codehilite):
             codehilite.appendChild(child)
     codehilite.removeChild(html_pre)
     return odt_node
+
+
+def transform_footnotes(render, xml_object, footnote_node):
+    # Iterate through Paragraphs in list items to get the
+    odt_node = xml_object.createElement('text:p')
+    odt_node.setAttribute('text:style-name', 'codehilite')
+
+    for idx, footnote in enumerate(footnote_node.getElementsByTagName('p')):
+        text = footnote.childNodes[0].wholeText
+        ref = footnote.childNodes[1].getAttribute('href')
+        # TODO: check if ref an anchor (#fnref-1)
+
+        note = xml_object.createElement('text:note')
+        note.setAttribute('text:id', ref)
+        note.setAttribute('text:note-class', 'footnote')
+
+        note_cite = xml_object.createElement('text:note-citation')
+        note_cite.appendChild(xml_object.createTextNode(str(idx)))
+        note.appendChild(note_cite)
+
+        note_body = xml_object.createElement('text:note-body')
+        note_p = xml_object.createElement('text:p')
+        note_p.appendChild(xml_object.createTextNode(text))
+        note_body.appendChild(note_p)
+        note.appendChild(note_body)
+
+        sup_node = None
+        for sup in xml_object.getElementsByTagName('sup'):
+            if sup.getAttribute('id') == ref[1:]:
+                sup_node = sup
+                break
+        if sup_node:
+            # import pdb; pdb.set_trace()
+            sup_node.parentNode.replaceChild(note, sup_node)
+
+    footnote_node.parentNode.removeChild(footnote_node)
+    return None
 
 
 def transform_code(render, xml_object, pre_node):

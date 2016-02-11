@@ -620,6 +620,10 @@ class Renderer(object):
                 else:
                     odt_node = xml_object.createElement(node_replace_with)
 
+                # probably the transformer just deleted the node, ignore it
+                if odt_node is None:
+                    continue
+
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:

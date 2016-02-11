@@ -24,7 +24,7 @@ def test_pad_string():
 
 class MarkdownFilterTestCase(TestCase):
     def setUp(self):
-        self.engine = Renderer(markdown_extras=['fenced-code-blocks'])
+        self.engine = Renderer(markdown_extras=['fenced-code-blocks', 'footnotes'])
         self.engine.template_images = {}
 
     def test_paragraphs(self):
@@ -61,3 +61,17 @@ class MarkdownFilterTestCase(TestCase):
         test = "```python\ndef test():\n    pass\n```"
         result = self.engine.markdown_filter(test)
         assert not '\n' in result
+
+    def test_footnotes(self):
+        tests = (("foo. [^1]\n bar. [^2] \n\n[^1]: referenced by foo.\n[^2]: referenced by bar\n",
+                  '<text:p text:style-name="Standard">foo. <text:note text:id="#fnref-1" text:note-class="footnote"><text:note-citation>0</text:note-citation><text:note-body><text:p>referenced by foo.\xa0</text:p></text:note-body></text:note><text:line-break/> bar. <text:note text:id="#fnref-2" text:note-class="footnote"><text:note-citation>1</text:note-citation><text:note-body><text:p>referenced by bar\xa0</text:p></text:note-body></text:note> </text:p>'),
+                 ("""# TEST
+
+foo. [^1]\n bar. [^2] \n\n[^1]: referenced by foo.\n[^2]: referenced by bar\n
+
+asdasdasd asd asd
+""", '<text:p text:style-name="Heading_20_1">TEST</text:p><text:line-break/><text:line-break/><text:p text:style-name="Standard">foo. <text:note text:id="#fnref-1" text:note-class="footnote"><text:note-citation>0</text:note-citation><text:note-body><text:p>referenced by foo.\xa0</text:p></text:note-body></text:note><text:line-break/> bar. <text:note text:id="#fnref-2" text:note-class="footnote"><text:note-citation>1</text:note-citation><text:note-body><text:p>referenced by bar\xa0</text:p></text:note-body></text:note> </text:p><text:line-break/><text:line-break/><text:p text:style-name="Standard">asdasdasd asd asd</text:p><text:line-break/><text:line-break/><text:line-break/>'),
+                )
+        for text, expected in iter(tests):
+            result = self.engine.markdown_filter(text)
+            assert result.startswith(expected)
