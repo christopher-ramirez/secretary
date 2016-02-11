@@ -1,6 +1,9 @@
-![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=development)
-
 # SECRETARY
+
+**Release**                                                                       | **Development**                                                                       | **Master**
+--------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------
+![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=release) | ![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=development) | ![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=master)
+
 ## Take the power of Jinja2 templates to OpenOffice and LibreOffice and create reports in your web applications.
 **Secretary** allows you to use Open Document Text (ODT) files as templates for rendering reports or letters. Secretary is an alternative solution for creating office documents and reports in OpenDocument Text format from templates that can be visually composed using the OpenOffice.org/LibreOffice Writer word processor.
 
@@ -14,20 +17,20 @@ Secretary Support Standard Markdown Syntax but I'll try to add extra syntax as w
 ### Code Highlight
 Code Highlighting is available through Markdown2 `fenced-code-blocks` plugin:
 
+````
+# Basics about Programming
+In this first chapter, we'll learn the basics of programming and the Javascript language. Here is a simple example:
 
-	# Basics about Programming
-	In this first chapter, we'll learn the basics of programming and the Javascript language. Here is a simple example:
+```javascript
+var hello = "Hello";
+var world = "World";
 
-	```javascript
-	var hello = "Hello";
-	var world = "World";
+// Message equals "Hello World"
+var message = hello + " " + world;
+```
 
-	// Message equals "Hello World"
-	var message = hello + " " + world;
-	```
-
-	This code can be executed by another program called an _interpreter_ that will read the code, and execute all the statements in the right order.
-
+This code can be executed by another program called an _interpreter_ that will read the code, and execute all the statements in the right order.
+````
 
 ####Preview
 
@@ -35,9 +38,7 @@ Code Highlighting is available through Markdown2 `fenced-code-blocks` plugin:
 
 **Note**: Secretary uses [pygments-css](https://github.com/richleland/pygments-css) as a guide to highlight the structure of the code. You need to define a Character Style in your odt template file (press F11 in libreoffice and go to `charater` tab) for each css class. You check the `tests/simple_template.odt` to see how.
 
-
 **Tip**: It's a lot easier to manually write/edit the styles. To do that first go to libreoffice, Save as your template as fodt (Flat ODT). it's basically a big xml file. find the styles you need to change and when you finished, just save as the docuemtn to regular odt format. There is also a [bash script](https://gist.github.com/bijanebrahimi/8f0b4fee1a96de79f663) I wrote to do the manuall job. It will convert a pygment css file into appropriate odt styles:
-
 
 ```bash
 $ git clone git@github.com:richleland/pygments-css.git
@@ -191,7 +192,8 @@ def db_images_loader(value, *args, *kwargs):
 
 engine.render(template, **template_vars)
 `
-````
+`
+```
 
 The media loader also receive any argument or keywork arguments declared in the template. i.e: If the placeholder image's name is: `{{ client.image|image('keep_ratio', tiny=True)}}` the media loader will receive: first the value of `client.image` as it first argument; the string `keep_ratio` as an additional argument and `tiny` as a keyword argument.
 
@@ -202,7 +204,6 @@ Secretary includes some predefined _jinja2_ filters. Included filters are:
 - **image(value)**
 
 See _Image Support_ section above.
-
 - **markdown(value)**
 
 Convert the value, a markdown formated string, into a ODT formated text. Example:

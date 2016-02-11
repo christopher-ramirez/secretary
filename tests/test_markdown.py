@@ -74,4 +74,4 @@ asdasdasd asd asd
                 )
         for text, expected in iter(tests):
             result = self.engine.markdown_filter(text)
-            assert result.startswith(expected)
+            assert expected in result
