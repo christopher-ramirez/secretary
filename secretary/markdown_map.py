@@ -6,7 +6,7 @@ except:
     from ordereddict import OrderedDict
 
 from .utils import list_id
-from .transfoms import transform_div, transform_code, attribute_class
+from .transfoms import transform_div, transform_code, attribute_class, transform_cell
 
 
 # Transform map used by the markdown filter. transform_map have
@@ -52,6 +52,33 @@ transform_map = OrderedDict([
     # Divs
     ('div', {
 		'replace_with': transform_div,
+	}),
+
+    # Table
+    ('table', {
+		# 'replace_with': transform_table,
+		'replace_with': 'table:table',
+        'attributes': {
+            'table:style-name': 'Table'
+        }
+	}),
+    ('tr', {
+		# 'replace_with': transform_table,
+		'replace_with': 'table:table-row',
+	}),
+    ('td', {
+		# 'replace_with': transform_table,
+		'replace_with': transform_cell,
+        'attributes': {
+            'office:value-type': 'string'
+        }
+	}),
+    ('th', {
+		# 'replace_with': transform_table,
+		'replace_with': transform_cell,
+        'attributes': {
+            'office:value-type': 'string'
+        }
 	}),
 
     # Links

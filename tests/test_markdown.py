@@ -75,3 +75,26 @@ asdasdasd asd asd
         for text, expected in iter(tests):
             result = self.engine.markdown_filter(text)
             assert expected in result
+
+    def test_tables(self):
+        text = "<table><tr><td>1</td><td>2</td></tr><tr><td>3</td><td>4</td></tr></table>"
+        expected = ('<table:table table:style-name="Table">'
+                    '<table:table-row>'
+                    '<table:table-cell office:value-type="string">'
+                    '<text:p text:style-name="Standard">1</text:p>'
+                    '</table:table-cell>'
+                    '<table:table-cell office:value-type="string">'
+                    '<text:p text:style-name="Standard">2</text:p>'
+                    '</table:table-cell>'
+                    '</table:table-row>'
+                    '<table:table-row>'
+                    '<table:table-cell office:value-type="string">'
+                    '<text:p text:style-name="Standard">3</text:p>'
+                    '</table:table-cell>'
+                    '<table:table-cell office:value-type="string">'
+                    '<text:p text:style-name="Standard">4</text:p>'
+                    '</table:table-cell>'
+                    '</table:table-row>'
+                    '</table:table>')
+        result = self.engine.markdown_filter(text)
+        assert expected in result

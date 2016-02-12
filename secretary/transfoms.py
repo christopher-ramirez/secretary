@@ -90,7 +90,6 @@ def transform_footnotes(render, xml_object, footnote_node):
                 sup_node = sup
                 break
         if sup_node:
-            # import pdb; pdb.set_trace()
             sup_node.parentNode.replaceChild(note, sup_node)
 
     footnote_node.parentNode.removeChild(footnote_node)
@@ -109,6 +108,18 @@ def transform_code(render, xml_object, pre_node):
 
     pre_node.removeChild(code_node)
     return odt_node
+
+
+def transform_cell(render, xml_object, cell_node):
+    odt_node = xml_object.createElement('table:table-cell')
+
+    paragraph_node = xml_object.createElement('p')
+    odt_node.appendChild(paragraph_node)
+    for child in cell_node.childNodes:
+        paragraph_node.appendChild(child)
+
+    return odt_node
+
 
 def attribute_class(html_node):
     return html_node.getAttribute('class')
