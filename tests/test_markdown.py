@@ -79,6 +79,7 @@ asdasdasd asd asd
     def test_tables(self):
         text = "<table><tr><td>1</td><td>2</td></tr><tr><td>3</td><td>4</td></tr></table>"
         expected = ('<table:table table:style-name="Table">'
+                    '<table:table-column table:number-columns-repeated="2"/>'
                     '<table:table-row>'
                     '<table:table-cell office:value-type="string">'
                     '<text:p text:style-name="Standard">1</text:p>'
