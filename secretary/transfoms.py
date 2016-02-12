@@ -116,9 +116,6 @@ def transform_code(render, xml_object, code_node):
 
     text_node = code_node.firstChild
     odt_node.appendChild(text_node)
-    # code = text_node.wholeText
-    # for element in __parse_line(code, xml_object):
-    #     odt_node.appendChild(element)
     return odt_node
 
 

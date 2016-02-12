@@ -1,8 +1,5 @@
 # SECRETARY
-
-**Release**                                                                       | **Development**                                                                      | **Master**
---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------
-![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=release) | ![BuildStatus](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=development) | ![BuildStatus](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=master)
+![Build Status](https://travis-ci.org/bijanebrahimi/secretary.svg?branch=release)
 
 ## Take the power of Jinja2 templates to OpenOffice and LibreOffice and create reports in your web applications.
 **Secretary** allows you to use Open Document Text (ODT) files as templates for rendering reports or letters. Secretary is an alternative solution for creating office documents and reports in OpenDocument Text format from templates that can be visually composed using the OpenOffice.org/LibreOffice Writer word processor.
@@ -36,7 +33,7 @@ statements in the right order.
 
 ####Preview
 
-[javascript codehilight](https://bijanebrahimi.github.io/secretary/screenshots/codehilite.png)
+![javascript codehilight](https://bijanebrahimi.github.io/secretary/screenshots/codehilite.png)
 
 **Note**: Secretary uses [pygments-css](https://github.com/richleland/pygments-css) as a guide to highlight the structure of the code. You need to define a Character Style in your odt template file (press F11 in libreoffice and go to `charater` tab) for each css class. You check the `tests/simple_template.odt` to see how.
 
@@ -66,7 +63,22 @@ what that means.[^2]
 ```
 
 #### Preview
-[footnotes](https://bijanebrahimi.github.io/secretary/screenshots/footnotes.png)
+![footnotes](https://bijanebrahimi.github.io/secretary/screenshots/footnotes.png)
+
+### Tables
+although tables are available through `extras`, it's a good practice to follow [Markdown Syntax](https://daringfireball.net/projects/markdown/syntax) on tables:
+
+```
+# Introduction
+
+| Header 1 | *Header* 2 |
+| -------- | -------- |
+| Cell 1 | [Cell 2](http://example.com) link |
+| _Cell 3_ | **Cell 4** |
+```
+
+#### Preview
+![tables](https://bijanebrahimi.github.io/secretary/screenshots/tables.png)
 
 ## Installing
 Installing Using `pip`:
