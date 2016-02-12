@@ -48,6 +48,11 @@ class MarkdownFilterTestCase(TestCase):
         result = self.engine.markdown_filter(test)
         assert 'codehilite' in result
 
+    def test_code(self):
+        test = "`test code`"
+        result = self.engine.markdown_filter(test)
+        assert 'codehilite' in result
+
     def test_code_blocks_indents(self):
         test_samples = {
             "```python\ndef test():\n    if True:\n        pass\n```": 3,

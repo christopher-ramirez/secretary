@@ -110,6 +110,18 @@ def transform_pre(render, xml_object, pre_node):
     return odt_node
 
 
+def transform_code(render, xml_object, code_node):
+    odt_node = xml_object.createElement('text:p')
+    odt_node.setAttribute('text:style-name', 'codehilite')
+
+    text_node = code_node.firstChild
+    odt_node.appendChild(text_node)
+    # code = text_node.wholeText
+    # for element in __parse_line(code, xml_object):
+    #     odt_node.appendChild(element)
+    return odt_node
+
+
 def transform_table(render, xml_object, table_node):
     odt_node = xml_object.createElement('table:table')
     odt_node.setAttribute('table:style-name', 'Table')

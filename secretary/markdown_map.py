@@ -6,7 +6,8 @@ except:
     from ordereddict import OrderedDict
 
 from .utils import list_id
-from .transfoms import transform_div, transform_pre, attribute_class, transform_table
+from .transfoms import transform_div, transform_pre, transform_code,\
+    attribute_class, transform_table
 
 
 # Transform map used by the markdown filter. transform_map have
@@ -136,10 +137,7 @@ transform_map = OrderedDict([
         'replace_with': transform_pre,
     }),
     ('code', {
-        'replace_with': 'text:p',
-        'style_attributes': {
-            'style-name': 'Preformatted_20_Text'
-        }
+        'replace_with': transform_code,
     }),
 
     # Lists
