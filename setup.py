@@ -26,7 +26,7 @@ class PyTest(TestCommand):
 
 setup(
     name='secretary',
-    version='0.3.4',
+    version='0.3.5',
     url='https://github.com/bijanebrahimi/secretary',
     license='MIT',
     author='Bijan Ebrahimi',
@@ -53,5 +53,10 @@ setup(
     ],
     extras_require={
         'testing': ['pytest']
-    }
+    },
+    entry_points="""
+    [console_scripts]
+    secretary = secretary.cli:main
+    """,
+
 )

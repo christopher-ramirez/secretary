@@ -29,7 +29,7 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined
 
-from .utils import UndefinedSilently, pad_string
+from .utils import UndefinedSilently, pad_string, logger
 from .errors import SecretaryError
 
 try:
@@ -102,8 +102,7 @@ class Renderer(object):
         returns:
             None
         """
-        self.log = logging.getLogger(__name__)
-        self.log.debug('Initing a Renderer instance\nTemplate')
+        logger.info('Initing a Renderer instance\nTemplate')
 
         if environment:
             self.environment = environment
@@ -133,7 +132,7 @@ class Renderer(object):
     def _unpack_template(self, template):
         # And Open/libreOffice is just a ZIP file. Here we unarchive the file
         # and return a dict with every file in the archive
-        self.log.debug('Unpacking template file')
+        logger.info('Unpacking template file')
 
         archive_files = {}
         archive = zipfile.ZipFile(template, 'r')
@@ -142,11 +141,11 @@ class Renderer(object):
 
         return archive_files
 
-        self.log.debug('Unpack completed')
+        logger.info('Unpack completed')
 
     def _pack_document(self, files):
         # Store to a zip files in files
-        self.log.debug('packing document')
+        logger.info('packing document')
         zip_file = io.BytesIO()
 
         zipdoc = zipfile.ZipFile(zip_file, 'a')
@@ -156,7 +155,7 @@ class Renderer(object):
             else:
                 zipdoc.writestr(fname, content)
 
-        self.log.debug('Document packing completed')
+        logger.info('Document packing completed')
 
         return zip_file
 
@@ -200,7 +199,7 @@ class Renderer(object):
           </table>
         """
 
-        self.log.debug('Preparing template tags')
+        logger.info('Preparing template tags')
         fields = xml_document.getElementsByTagName('text:text-input')
 
         # First, count secretary fields
@@ -345,12 +344,12 @@ class Renderer(object):
             filename = media
         else:
             if not self.media_path:
-                self.log.debug('media_path property not specified to load images from.')
+                logger.debug('media_path property not specified to load images from.')
                 return
 
             filename = path.join(self.media_path, media)
             if not path.isfile(filename):
-                self.log.debug('Media file "%s" does not exists.' % filename)
+                logger.debug('Media file "%s" does not exists.' % filename)
                 return
 
         mime = guess_type(filename)
@@ -358,7 +357,7 @@ class Renderer(object):
 
     def replace_images(self, xml_document):
         """Perform images replacements"""
-        self.log.debug('Inserting images')
+        logger.info('Inserting images')
         frames = xml_document.getElementsByTagName('draw:frame')
 
         for frame in frames:
@@ -413,7 +412,7 @@ class Renderer(object):
 
     def _render_xml(self, xml_document, **kwargs):
         # Prepare the xml object to be processed by jinja2
-        self.log.debug('Rendering XML object')
+        logger.info('Rendering XML object')
 
         try:
             self.template_images = dict()
@@ -434,13 +433,13 @@ class Renderer(object):
             raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
                              (ErrorString(e.code), e.lineno, e.offset, near))
         except:
-            self.log.error('Error rendering template:\n%s',
+            logger.error('Error rendering template:\n%s',
                            xml_document.toprettyxml(), exc_info=True)
 
-            self.log.error('Unescaped template was:\n{}'.format(template_string))
+            logger.error('Unescaped template was:\n{}'.format(template_string))
             raise
         finally:
-            self.log.debug('Rendering xml object finished')
+            logger.debug('Rendering xml object finished')
 
     def render(self, template, **kwargs):
         """
@@ -454,7 +453,7 @@ class Renderer(object):
                 A binary stream which contains the rendered document.
         """
 
-        self.log.debug('Initing a template rendering')
+        logger.info('Initing a template rendering')
         self.files = self._unpack_template(template)
         self.render_vars = {}
 
@@ -474,7 +473,7 @@ class Renderer(object):
         # Render styles.xml
         self.styles = self._render_xml(self.styles, **kwargs)
 
-        self.log.debug('Template rendering finished')
+        logger.info('Template rendering finished')
 
         self.files['content.xml']           = self.content.toxml().encode('ascii', 'xmlcharrefreplace')
         self.files['styles.xml']            = self.styles.toxml().encode('ascii', 'xmlcharrefreplace')

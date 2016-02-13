@@ -102,6 +102,39 @@ $ cd secretary
 # python setup.py install
 ```
 
+### Command-line
+By installing secretary, a command line will be available:
+
+```sh
+$ secretary --help
+usage: secretary [-h] [-o OUTPUT] [-t TEMPLATE] [-v] input
+
+Secretary
+
+positional arguments:
+  input                 Markdown Formatted File
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        ODT output file
+  -t TEMPLATE, --template TEMPLATE
+                        ODT template file
+  -v, --verbose         Be verbose
+```
+
+### Example
+
+```sh
+$ echo "# Readme\nHere is a little example for scretary\n\n" > README.md
+$ secretary README.md --output readme.odt
+```
+
+```sh
+$ echo "# Readme\nHere is a little example for scretary\n\n" > README.md
+$ secretary README.md --output readme.odt --template custom_template.odt
+```
+
 ## Rendering a Template
 
 ```python
@@ -158,9 +191,13 @@ Secretary will handle multiline variable values replacing the line breaks with a
 Most of the time secretary will handle the internal composing of XML when you insert control flow tags (`{% for foo in foos %}`, `{% if bar %}`, etc and its enclosing tags. This is done by finding the present or absence of other secretary tags within the internal XML tree.
 
 #### Examples document structures
-**Printing multiple records in a table** ![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/table_01.png)
+**Printing multiple records in a table**
 
-**Conditional paragraphs** ![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/conditional_paragraph_01.png)
+![alt tag](https://bijanebrahimi.github.io/secretary/docs/table_01.png)
+
+**Conditional paragraphs**
+
+![alt tag](https://bijanebrahimi.github.io/secretary/docs/conditional_paragraph_01.png)
 
 The last example could had been simplified into a single paragraph in Writer like:
 
@@ -254,6 +291,7 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+- **0.3.5**: Added command line `secretary`
 - **0.3.4**: Fixed multiple elements in table cell
 - **0.3.3**: Added tables support using markdown2 `tables` extra
 - **0.3.2**: Added footnotes support using markdown2 `footnotes` extra
