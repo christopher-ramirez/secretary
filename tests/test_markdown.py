@@ -24,7 +24,7 @@ def test_pad_string():
 
 class MarkdownFilterTestCase(TestCase):
     def setUp(self):
-        self.engine = Renderer(markdown_extras=['fenced-code-blocks', 'footnotes'])
+        self.engine = Renderer(markdown_extras=['fenced-code-blocks', 'footnotes', 'tables'])
         self.engine.template_images = {}
 
     def test_paragraphs(self):
@@ -99,6 +99,33 @@ asdasdasd asd asd
                     '</table:table-cell>'
                     '<table:table-cell office:value-type="string">'
                     '<text:p text:style-name="Standard">4</text:p>'
+                    '</table:table-cell>'
+                    '</table:table-row>'
+                    '</table:table>')
+        result = self.engine.markdown_filter(text)
+        assert expected in result
+
+    def test_tables_multiline(self):
+        text = "<table><tr><td><p>1</p><p>2</p></td></tr></table>"
+        expected = ('<table:table table:style-name="Table">'
+                    '<table:table-column table:number-columns-repeated="1"/>'
+                    '<table:table-row>'
+                    '<table:table-cell office:value-type="string">'
+                    '<text:p text:style-name="Standard">1</text:p>'
+                    '<text:p text:style-name="Standard">2</text:p>'
+                    '</table:table-cell>'
+                    '</table:table-row>'
+                    '</table:table>')
+        result = self.engine.markdown_filter(text)
+        assert expected in result
+
+    def test_tables_code(self):
+        text = "<table><tr><td><code><span class='k'>1</span></code></td></tr></table>"
+        expected = ('<table:table table:style-name="Table">'
+                    '<table:table-column table:number-columns-repeated="1"/>'
+                    '<table:table-row>'
+                    '<table:table-cell office:value-type="string">'
+                    '<text:p text:style-name="codehilite"><text:span text:style-name="k">1</text:span></text:p>'
                     '</table:table-cell>'
                     '</table:table-row>'
                     '</table:table>')

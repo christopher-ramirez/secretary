@@ -136,9 +136,14 @@ def transform_table(render, xml_object, table_node):
             odt_row.appendChild(odt_cell)
 
             paragraph_node = xml_object.createElement('p')
-            odt_cell.appendChild(paragraph_node)
             for child in table_cell.childNodes:
-                paragraph_node.appendChild(child)
+                if isinstance(child, Element) and child.tagName in ['p', 'pre', 'code', 'div']:
+                    odt_cell.appendChild(child.cloneNode(True))
+                else:
+                    paragraph_node.appendChild(child.cloneNode(True))
+            if paragraph_node.hasChildNodes():
+                odt_cell.appendChild(paragraph_node)
+
     table_node.parentNode.replaceChild(odt_node, table_node)
     return None
 

@@ -59,7 +59,8 @@ improve, have been developed over centuries. To produce perfect books, these rul
 applied."[^1] Richard Hendel describes book design as "an arcane subject", and refers to the need for a context to understand
 what that means.[^2]
 
-[^1]: Walter Hamady and the Perishable Press Limited [^2]: Designing The Painted Bird
+[^1]: Walter Hamady and the Perishable Press Limited
+[^2]: Designing The Painted Bird
 ```
 
 #### Preview
@@ -73,8 +74,14 @@ although tables are available through `extras`, it's a good practice to follow [
 
 | Header 1 | *Header* 2 |
 | -------- | -------- |
-| Cell 1 | [Cell 2](http://example.com) link |
+| <code><span class="k">hello</span> world</code> | [Cell 2](http://example.com) link |
 | _Cell 3_ | **Cell 4** |
+| hello. [^1] | world. [^2] |
+
+Content goes here.
+
+[^1]: ref to hello
+[^2]: ref to world
 ```
 
 #### Preview
