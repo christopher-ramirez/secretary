@@ -102,6 +102,39 @@ $ cd secretary
 # python setup.py install
 ```
 
+### Command-line
+By installing secretary, a command line will be available:
+
+```sh
+$ secretary --help
+usage: secretary [-h] [-o OUTPUT] [-t TEMPLATE] [-v] input
+
+Secretary
+
+positional arguments:
+  input                 Markdown Formatted File
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        ODT output file
+  -t TEMPLATE, --template TEMPLATE
+                        ODT template file
+  -v, --verbose         Be verbose
+```
+
+### Example
+
+```sh
+$ echo "# Readme\nHere is a little example for scretary\n\n" > README.md
+$ secretary README.md --output readme.odt
+```
+
+```sh
+$ echo "# Readme\nHere is a little example for scretary\n\n" > README.md
+$ secretary README.md --output readme.odt --template custom_template.odt
+```
+
 ## Rendering a Template
 
 ```python
