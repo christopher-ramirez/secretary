@@ -3,8 +3,8 @@ import logging
 import argparse
 from datetime import datetime
 
-from secretary import Renderer
-from secretary.utils import logger
+from .secretary import Renderer
+from .utils import logger
 
 
 def secretary_init(input, output=None, template=None):
