@@ -1,5 +1,8 @@
+import logging
 from random import randint
 from jinja2 import Undefined
+
+logger = logging.getLogger('secretary')
 
 def list_id(list_node=None):
     return 'list%d' % (randint(100000000000000000,900000000000000000))

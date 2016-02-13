@@ -158,9 +158,13 @@ Secretary will handle multiline variable values replacing the line breaks with a
 Most of the time secretary will handle the internal composing of XML when you insert control flow tags (`{% for foo in foos %}`, `{% if bar %}`, etc and its enclosing tags. This is done by finding the present or absence of other secretary tags within the internal XML tree.
 
 #### Examples document structures
-**Printing multiple records in a table** ![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/table_01.png)
+**Printing multiple records in a table**
 
-**Conditional paragraphs** ![alt tag](https://github.com/christopher-ramirez/secretary/blob/development/docs/images/conditional_paragraph_01.png)
+![alt tag](https://bijanebrahimi.github.io/secretary/docs/table_01.png)
+
+**Conditional paragraphs**
+
+![alt tag](https://bijanebrahimi.github.io/secretary/docs/conditional_paragraph_01.png)
 
 The last example could had been simplified into a single paragraph in Writer like:
 
