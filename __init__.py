@@ -36,6 +36,8 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined
 
+from filters import PadStringFilter, ImageFilter
+
 try:
     if sys.version_info.major == 3:
         xrange = range
@@ -98,9 +100,6 @@ def media_loader(f):
 
     return wrapper
 
-def pad_string(value, length=5):
-    value = str(value)
-    return value.zfill(length)
 
 class Renderer(object):
     """
@@ -137,7 +136,7 @@ class Renderer(object):
             self.environment = Environment(undefined=UndefinedSilently,
                                            autoescape=True)
             # Register filters
-            self.environment.filters['pad'] = pad_string
+            ImageFilter(self.environment)
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
 
