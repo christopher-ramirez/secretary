@@ -1,3 +1,3 @@
 class ImageFilter():
-    def __init__(self, environment, **kwargs):
+    def __init__(self, engine, **kwargs):
         pass

@@ -136,7 +136,7 @@ class Renderer(object):
             self.environment = Environment(undefined=UndefinedSilently,
                                            autoescape=True)
             # Register filters
-            ImageFilter(self.environment)
+            ImageFilter(self)
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
 
