@@ -5,11 +5,11 @@ from uuid import uuid4
 class ImageFilter():
     def __init__(self, engine, **kwargs):
         self.engine = engine
-        self.engine.environment.filters['image'] = self.image_filter
+        self.engine.environment.filters['image'] = self.filter
         engine.before_render_xml(self.before_render_starts)
         engine.after_render_xml(self.after_renders_end)
 
-    def image_filter(self, value, *args, **kwargs):
+    def filter(self, value, *args, **kwargs):
         key = uuid4().hex
         self.images[key] = {
             'value': value,
