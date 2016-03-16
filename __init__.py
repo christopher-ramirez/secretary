@@ -129,6 +129,8 @@ class Renderer(object):
         """
         self.log = logging.getLogger(__name__)
         self.log.debug('Initing a Renderer instance\nTemplate')
+        self.before_render_callbacks = []
+        self.after_render_callbacks = []
 
         if environment:
             self.environment = environment
@@ -136,15 +138,14 @@ class Renderer(object):
             self.environment = Environment(undefined=UndefinedSilently,
                                            autoescape=True)
             # Register filters
+            PadStringFilter(self)
             ImageFilter(self)
             self.environment.filters['markdown'] = self.markdown_filter
-            self.environment.filters['image'] = self.image_filter
 
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
 
         self._compile_tags_expressions()
-
 
     def media_loader(self, callback):
         """This sets the the media loader. A user defined function which
@@ -420,6 +421,11 @@ class Renderer(object):
 
         return xml_text
 
+    def before_render_xml(self, callback):
+        self.before_render_callbacks.append(callback)
+
+    def after_render_xml(self, callback):
+        self.after_render_callbacks.append(callback)
 
     def add_media_to_archive(self, media, mime, name=''):
         """
@@ -435,7 +441,7 @@ class Renderer(object):
         if not extension:
             extension = guess_extension(mime)
 
-        media_path = 'Pictures/%s%s' % (name, extension)
+        media_path = '%s%s' % (name, extension)
         media.seek(0)
         self.files[media_path] = media.read(-1)
         if hasattr(media, 'close'):
@@ -470,95 +476,6 @@ class Renderer(object):
 
         mime = guess_type(filename)
         return (open(filename, 'rb'), mime[0] if mime else None)
-
-
-    def replace_images(self, xml_document):
-        """Perform images replacements"""
-        self.log.debug('Inserting images')
-        frames = xml_document.getElementsByTagName('draw:frame')
-
-        for frame in frames:
-            if not frame.hasChildNodes():
-                continue
-
-            key = frame.getAttribute('draw:name')
-            if key not in self.template_images:
-                continue
-
-            # Get frame attributes
-            frame_attrs = dict()
-            for i in xrange(frame.attributes.length):
-                attr = frame.attributes.item(i)
-                frame_attrs[attr.name] = attr.value
-
-            # Get child draw:image node and its attrs
-            image_node = frame.childNodes[0]
-            image_attrs = dict()
-            for i in xrange(image_node.attributes.length):
-                attr = image_node.attributes.item(i)
-                image_attrs[attr.name] = attr.value
-
-            # Request to media loader the image to use
-            image = self.media_callback(self.template_images[key]['value'],
-                                        *self.template_images[key]['args'],
-                                        frame_attrs=frame_attrs,
-                                        image_attrs=image_attrs,
-                                        **self.template_images[key]['kwargs'])
-
-            # Update frame and image node attrs (if they where updated in
-            # media_callback call)
-            for k, v in frame_attrs.items():
-                frame.setAttribute(k, v)
-
-            for k, v in image_attrs.items():
-                image_node.setAttribute(k, v)
-
-            # Keep original image reference value
-            if isinstance(self.template_images[key]['value'], basestring):
-                frame.setAttribute('draw:name',
-                                   self.template_images[key]['value'])
-
-            # Does the madia loader returned something?
-            if not image:
-                continue
-
-            mname = self.add_media_to_archive(media=image[0], mime=image[1],
-                                              name=key)
-            if mname:
-                image_node.setAttribute('xlink:href', mname)
-
-    def _render_xml(self, xml_document, **kwargs):
-        # Prepare the xml object to be processed by jinja2
-        self.log.debug('Rendering XML object')
-        template_string = ""
-
-        try:
-            self.template_images = dict()
-            self._prepare_document_tags(xml_document)
-            template_string = self._unescape_entities(xml_document.toxml())
-            jinja_template = self.environment.from_string(template_string)
-
-            result = jinja_template.render(**kwargs)
-            result = self._encode_escape_chars(result)
-
-            final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
-            if self.template_images:
-                self.replace_images(final_xml)
-
-            return final_xml
-        except ExpatError as e:
-            near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
-            raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
-                             (ErrorString(e.code), e.lineno, e.offset, near))
-        except:
-            self.log.error('Error rendering template:\n%s',
-                           xml_document.toprettyxml(), exc_info=True)
-
-            self.log.error('Unescaped template was:\n{0}'.format(template_string))
-            raise
-        finally:
-            self.log.debug('Rendering xml object finished')
-
 
     def render(self, template, **kwargs):
         """
@@ -601,6 +518,44 @@ class Renderer(object):
         document = self._pack_document(self.files)
         return document.getvalue()
 
+    def _render_xml(self, xml_document, **kwargs):
+        # Prepare the xml object to be processed by jinja2
+        self.log.debug('Rendering XML object')
+        template_string = ""
+
+        try:
+            self._before_render_xml(xml_document)
+            self._prepare_document_tags(xml_document)
+            template_string = self._unescape_entities(xml_document.toxml())
+            jinja_template = self.environment.from_string(template_string)
+
+            result = jinja_template.render(**kwargs)
+            result = self._encode_escape_chars(result)
+
+            final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            self._after_render_xml(final_xml)
+
+            return final_xml
+        except ExpatError as e:
+            near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
+            raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
+                             (ErrorString(e.code), e.lineno, e.offset, near))
+        except:
+            self.log.error('Error rendering template:\n%s',
+                           xml_document.toprettyxml(), exc_info=True)
+
+            self.log.error('Unescaped template was:\n{0}'.format(template_string))
+            raise
+        finally:
+            self.log.debug('Rendering xml object finished')
+
+    def _before_render_xml(self, xml_document):
+        for callback in self.before_render_callbacks:
+            callback(xml_document)
+
+    def _after_render_xml(self, xml_document):
+        for callback in self.after_render_callbacks:
+            callback(xml_document)
 
     def _parent_of_type(self, node, of_type):
         # Returns the first immediate parent of type `of_type`.
@@ -763,19 +718,6 @@ class Renderer(object):
 
         return ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
-
-    def image_filter(self, value, *args, **kwargs):
-        """Store value into template_images and return the key name where this
-        method stored it. The value returned it later used to load the image
-        from media loader and finally inserted into the final ODT document."""
-        key = uuid4().hex
-        self.template_images[key] = {
-            'value': value,
-            'args': args,
-            'kwargs': kwargs
-        }
-
-        return key
 
 
 def render_template(template, **kwargs):
