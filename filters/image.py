@@ -64,7 +64,6 @@ class ImageFilter():
                 if mname:
                     image_node.setAttribute('xlink:href', mname)
 
-
     def get_images_frames_in_document(self, xml):
         frames = xml.getElementsByTagName('draw:frame')
         for frame in frames:
