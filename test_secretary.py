@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import os
 from xml.dom.minidom import getDOMImplementation
 from unittest import TestCase
-from secretary import UndefinedSilently, pad_string, Renderer
+from secretary import UndefinedSilently, Renderer
 
 def test_undefined_silently():
     undefined = UndefinedSilently()
@@ -12,11 +12,6 @@ def test_undefined_silently():
     assert isinstance(undefined(), UndefinedSilently)
     assert isinstance(undefined.attribute, UndefinedSilently)
     assert str(undefined) == ''
-
-def test_pad_string():
-    assert pad_string('TEST') == '0TEST'
-    assert pad_string('TEST', 4) == 'TEST'
-    assert pad_string(1) == '00001'
 
 class RenderTestCase(TestCase):
     def setUp(self):
@@ -68,4 +63,3 @@ class RenderTestCase(TestCase):
 
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
-
