@@ -539,7 +539,7 @@ class Renderer(object):
             xml_source = xml_document.toxml()
             xml_source = xml_source.encode('ascii', 'xmlcharrefreplace')
             jinja_template = self.environment.from_string(
-                self._unescape_entities(xml_source)
+                self._unescape_entities(xml_source.decode('utf-8'))
             )
 
             result = jinja_template.render(**kwargs)
