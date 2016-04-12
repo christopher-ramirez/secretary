@@ -229,6 +229,7 @@ class Renderer(object):
         # Compiles escape expressions
         self.escape_map = dict()
         unescape_rules = {
+            r'&quot;'       : r'"',
             r'&gt;'         : r'>',
             r'&lt;'         : r'<',
             r'&amp;'        : r'&',
