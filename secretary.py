@@ -236,7 +236,7 @@ class Renderer(object):
         }
 
         for key, value in unescape_rules.items():
-            exp = r'(?is)(({0}|{1}).*?)({2})(.*?({3}|{4}))'
+            exp = r'(?is)(({0}|{1})[^{0}{1}]*?)({2})([^{3}{4}]*?({3}|{4}))'
             key = re.compile(exp.format(
                 self.environment.variable_start_string,
                 self.environment.block_start_string,
