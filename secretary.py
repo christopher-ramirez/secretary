@@ -247,7 +247,6 @@ class Renderer(object):
 
             self.escape_map[key] = r'\1{0}\4'.format(value)
 
-
     def _is_jinja_tag(self, tag):
         """
             Returns True is tag (str) is a valid jinja instruction tag.
@@ -536,13 +535,16 @@ class Renderer(object):
         try:
             self.template_images = dict()
             self._prepare_document_tags(xml_document)
-            template_string = self._unescape_entities(xml_document.toxml())
-            jinja_template = self.environment.from_string(template_string)
+            xml_source = xml_document.toxml()
+            xml_source = xml_source.encode('ascii', 'xmlcharrefreplace')
+            jinja_template = self.environment.from_string(
+                self._unescape_entities(xml_source)
+            )
 
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
 
-            final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
+            final_xml = parseString(result)
             if self.template_images:
                 self.replace_images(final_xml)
 
