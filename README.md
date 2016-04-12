@@ -147,7 +147,8 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
-* **0.2.8**: Fixs #25. Some internal refactorings. Drop the minimal support for jinja tags in plain text.
+* **0.2.9**: Fix bug when unescaping `&quot;`, `&apos;`, `&lt;`, `&gt;` and '&amp;' inside Jinja expressions.
+* **0.2.8**: Fix #25. Some internal refactorings. Drop the minimal support for Jinja tags in plain text.
 * **0.2.7**: Truly fix regexps used to unscape XML entities present inside Jinja tags.
 * **0.2.6**: **AVOID THIS RELEASE** ~~Fix regexps used to unscape XML entities present inside Jinja tags.~~
 * **0.2.5**: Fix issues [#14](https://github.com/christopher-ramirez/secretary/issues/14) and [#16](https://github.com/christopher-ramirez/secretary/issues/16). Thanks to [DieterBuysAI](/DieterBuysAI) for this release.
