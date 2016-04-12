@@ -545,7 +545,7 @@ class Renderer(object):
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
 
-            final_xml = parseString(result)
+            final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
             if self.template_images:
                 self.replace_images(final_xml)
 
