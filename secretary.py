@@ -237,7 +237,7 @@ class Renderer(object):
         }
 
         for key, value in unescape_rules.items():
-            exp = r'(?is)(({0}|{1})[^{0}{1}]*?)({2})([^{3}{4}]*?({3}|{4}))'
+            exp = r'(?is)(({0}|{1})[^{3}{4}]*?)({2})([^{0}{1}]*?({3}|{4}))'
             key = re.compile(exp.format(
                 self.environment.variable_start_string,
                 self.environment.block_start_string,
@@ -551,7 +551,7 @@ class Renderer(object):
 
             return final_xml
         except ExpatError as e:
-            near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
+            near = result.split('\n')[e.lineno -1][e.offset-200:e.offset+200]
             raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
                              (ErrorString(e.code), e.lineno, e.offset, near))
         except:
