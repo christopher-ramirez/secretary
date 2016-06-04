@@ -413,10 +413,13 @@ class Renderer(object):
         """
         Replace line feed and/or tabs within text:span entities.
         """
-        find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t])[^<]*?)</text:\1>'
+        find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t|\r|\x0b|\x0c])[^<]*?)</text:\1>'
         for m in re.findall(find_pattern, xml_text):
             replacement = m[1].replace('\n', '<text:line-break/>')
             replacement = replacement.replace('\t', '<text:tab/>')
+            replacement = replacement.replace('\r', '<text:space/>')
+            replacement = replacement.replace('\x0b', '<text:space/>')
+            replacement = replacement.replace('\x0c', '<text:space/>')
             xml_text = xml_text.replace(m[1], replacement)
 
         return xml_text
