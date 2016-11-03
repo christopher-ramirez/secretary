@@ -720,6 +720,17 @@ class Renderer(object):
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:
+                        # We can't directly insert text into a text:list-item
+                        # element. The content of the item most be wrapped inside
+                        # a container like text:p. When there's not a double linebreak
+                        # separating list elements, markdown2 creates <li> elements without
+                        # wraping their contents inside a container. Here we automatically
+                        # create the container if one was not created by markdown2.
+                        if (tag == 'li' and (not child_node.localName)):
+                            container = xml_object.createElement('text:p')
+                            container.appendChild(child_node.cloneNode(True))
+                            child_node = container
+
                         odt_node.appendChild(child_node.cloneNode(True))
 
                 # Add style-attributes defined in transform_map
