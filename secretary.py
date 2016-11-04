@@ -725,7 +725,7 @@ class Renderer(object):
                     # list elements, markdown2 creates <li> elements without wraping
                     # their contents inside a container. Here we automatically create
                     # the container if one was not created by markdown2.
-                    if (tag=='li' and html_node.childNodes[0].localName <> 'p'):
+                    if (tag=='li' and html_node.childNodes[0].localName != 'p'):
                         container = xml_object.createElement('text:p')
                         odt_node.appendChild(container)
                     else:
