@@ -3,8 +3,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, '../../..')))
-    
-from secretary import Renderer
+
+from __init__ import Renderer
 
 if __name__ == '__main__':
     engine = Renderer(media_path='.')
