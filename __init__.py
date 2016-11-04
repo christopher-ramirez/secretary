@@ -228,14 +228,15 @@ class Renderer(object):
         # Compiles escape expressions
         self.escape_map = dict()
         unescape_rules = {
-            r'&gt;'         : r'>',
-            r'&lt;'         : r'<',
-            r'&amp;'        : r'&',
-            r'&quot;'       : r'"',
+            r'&gt;': r'>',
+            r'&lt;': r'<',
+            r'&amp;': r'&',
+            r'&quot;': r'"',
+            r'&apos;': r'\'',
         }
 
         for key, value in unescape_rules.items():
-            exp = r'(?is)(({0}|{1}).*?)({2})(.*?({3}|{4}))'
+            exp = r'(?is)(({0}|{1})[^{3}{4}]*?)({2})([^{0}{1}]*?({3}|{4}))'
             key = re.compile(exp.format(
                 self.environment.variable_start_string,
                 self.environment.block_start_string,
@@ -246,20 +247,19 @@ class Renderer(object):
 
             self.escape_map[key] = r'\1{0}\4'.format(value)
 
-
     def _is_jinja_tag(self, tag):
         """
             Returns True is tag (str) is a valid jinja instruction tag.
         """
 
-        return self.tag_pattern.findall(tag)
+        return len(self.tag_pattern.findall(tag)) > 0
 
 
     def _is_block_tag(self, tag):
         """
             Returns True is tag (str) is a jinja flow control tag.
         """
-        return self.block_pattern.findall(tag)
+        return len(self.block_pattern.findall(tag)) > 0
 
 
     def _tags_in_document(self, document):
@@ -288,7 +288,7 @@ class Renderer(object):
         """
         for tag in self._tags_in_document(document):
             content = tag.childNodes[0].data.strip()
-            block_tag = re.findall(r'(?is)^{%[^{}]*%}$', content)
+            block_tag = self._is_block_tag(content)
 
             self._inc_node_tags_count(tag.parentNode, block_tag)
 
@@ -535,8 +535,11 @@ class Renderer(object):
         try:
             self.template_images = dict()
             self._prepare_document_tags(xml_document)
-            template_string = self._unescape_entities(xml_document.toxml())
-            jinja_template = self.environment.from_string(template_string)
+            xml_source = xml_document.toxml()
+            xml_source = xml_source.encode('ascii', 'xmlcharrefreplace')
+            jinja_template = self.environment.from_string(
+                self._unescape_entities(xml_source.decode('utf-8'))
+            )
 
             result = jinja_template.render(**kwargs)
             result = self._encode_escape_chars(result)
@@ -547,7 +550,7 @@ class Renderer(object):
 
             return final_xml
         except ExpatError as e:
-            near = result.split('\n')[e.lineno -1][e.offset-50:e.offset+50]
+            near = result.split('\n')[e.lineno -1][e.offset-200:e.offset+200]
             raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
                              (ErrorString(e.code), e.lineno, e.offset, near))
         except:
@@ -716,6 +719,17 @@ class Renderer(object):
                 # Transfer child nodes
                 if html_node.hasChildNodes():
                     for child_node in html_node.childNodes:
+                        # We can't directly insert text into a text:list-item
+                        # element. The content of the item most be wrapped inside
+                        # a container like text:p. When there's not a double linebreak
+                        # separating list elements, markdown2 creates <li> elements without
+                        # wraping their contents inside a container. Here we automatically
+                        # create the container if one was not created by markdown2.
+                        if (tag == 'li' and (not child_node.localName)):
+                            container = xml_object.createElement('text:p')
+                            container.appendChild(child_node.cloneNode(True))
+                            child_node = container
+
                         odt_node.appendChild(child_node.cloneNode(True))
 
                 # Add style-attributes defined in transform_map
