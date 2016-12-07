@@ -704,6 +704,11 @@ class Renderer(object):
         except ImportError:
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
+        # Escape XML special characters : & < >
+        markdown_text = markdown_text.replace('<', '&lt;')
+        markdown_text = markdown_text.replace('>', '&gt;')
+        markdown_text = markdown_text.replace('&', '&amp;')
+
         styles_cache = {}   # cache styles searching
         html_text = markdown(markdown_text)
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
