@@ -661,7 +661,7 @@ class Renderer(object):
 
         return None
 
-    def insert_style_in_content(self, style_name, attributes=None,
+    def insert_style_in_content(self, style_name, style_family, attributes=None,
         **style_properties):
         """
             Insert a new style into content.xml's <office:automatic-styles> node.
@@ -672,15 +672,16 @@ class Renderer(object):
         style_node = self.content.createElement('style:style')
 
         style_node.setAttribute('style:name', style_name)
-        style_node.setAttribute('style:family', 'text')
-        style_node.setAttribute('style:parent-style-name', 'Standard')
+        style_node.setAttribute('style:family', style_family)
+        if 'table' not in style_family:
+            style_node.setAttribute('style:parent-style-name', 'Standard')
 
         if attributes:
             for k, v in attributes.items():
                 style_node.setAttribute('style:%s' % k, v)
 
         if style_properties:
-            style_prop = self.content.createElement('style:text-properties')
+            style_prop = self.content.createElement('style:%s-properties' % style_family)
             for k, v in style_properties.items():
                 style_prop.setAttribute('%s' % k, v)
 
@@ -710,7 +711,8 @@ class Renderer(object):
         markdown_text = markdown_text.replace('&', '&amp;')
 
         styles_cache = {}   # cache styles searching
-        html_text = markdown(markdown_text)
+        html_text = markdown(markdown_text, extras=['tables'])
+
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
@@ -730,7 +732,8 @@ class Renderer(object):
                     # list elements, markdown2 creates <li> elements without wraping
                     # their contents inside a container. Here we automatically create
                     # the container if one was not created by markdown2.
-                    if (tag=='li' and html_node.childNodes[0].localName != 'p'):
+                    # idem for <td> and <th>
+                    if ((tag=='li' or tag=='td' or tag=='th') and html_node.childNodes[0].localName != 'p'):
                         container = xml_object.createElement('text:p')
                         odt_node.appendChild(container)
                     else:
@@ -755,7 +758,7 @@ class Renderer(object):
                             odt_node.setAttribute('xlink:href',
                                 html_node.getAttribute('href'))
 
-                # Does the node need to create an style?
+                # Does the node need to create a style?
                 if 'style' in transform_map[tag]:
                     name = transform_map[tag]['style']['name']
                     if not name in styles_cache:
@@ -764,11 +767,79 @@ class Renderer(object):
                         if style_node is None:
                             # Create and cache the style node
                             style_node = self.insert_style_in_content(
-                                name, transform_map[tag]['style'].get('attributes', None),
-                                **transform_map[tag]['style']['properties'])
+                                         name,
+                                         'text',
+                                         transform_map[tag]['style'].get('attributes', None),
+                                         **transform_map[tag]['style']['properties'])
                             styles_cache[name] = style_node
 
+
                 html_node.parentNode.replaceChild(odt_node, html_node)
+
+        # For each table:
+        #    - Add attribute style-name which the same than table:name
+        #    - manually insert table-column items in it, because it cannot
+        #      be inserted with the markdown map. To know the number of columns,
+        #      count the number of cells in the first row.
+        #    - Add the unique style of this table to the document
+        #      It cannot be written in the markdown map because the
+        #      name is unique and cannot be determined until now
+        for node in xml_object.getElementsByTagName('html')[0].childNodes:
+            if node.nodeName == 'table:table':
+                table_style_name = node.getAttribute('table:name')
+                node.setAttribute('table:style-name', table_style_name)
+                self.insert_style_in_content(
+                    table_style_name,
+                    'table',                 # family
+                    None,                    # Attributes
+                    **{'fo:margin-left':"0cm", # Properties
+                     'table:align':"margins"})
+
+                # For each column:
+                #    - add a column tag to the table
+                #      Each column has a letter in its style-name, first is 'A'
+                #      2nd is 'B', etc.
+                #    - Add the unique style of this column to the document
+                #      It cannot be written in the markdown map because the
+                #      name is unique and cannot be determined until now
+                rows = node.getElementsByTagName("table:table-row")
+                nb_of_col = len(rows[0].getElementsByTagName("table:table-cell"))
+                for col in range(nb_of_col):
+                    column_style_name = table_style_name + '.' + chr(ord('A') + col)
+                    column_node = xml_object.createElement('table:table-column')
+                    # Insert column before descriptions of rows
+                    node.insertBefore(column_node, node.childNodes[0])
+                    column_node.setAttribute('table:style-name', column_style_name)
+                    self.insert_style_in_content(
+                        column_style_name,
+                        'table-column', # family
+                        None,           # Attributes
+                        **{})           # Properties
+
+                # For each cell:
+                #     - set the unique attribute table:style-name
+                #       according to the row and the column number (A1, A2, etc.)
+                #     - Add the unique style of this cell to the document
+                #       It cannot be written in the markdown map because the
+                #       name is unique and cannot be determined until now
+                row_nb = 1
+                col_nb = 0
+                for row in rows:
+                    for cell in row.getElementsByTagName("table:table-cell"):
+                        cell_style_name = table_style_name + '.' + chr(ord('A') + col_nb) + str(row_nb)
+                        cell.setAttribute('table:style-name', cell_style_name)
+                        self.insert_style_in_content(
+                            cell_style_name,
+                            'table-cell',                       # family
+                            None,                               # Attributes
+                            **{'fo:background-color':"#ffffff", # Properties
+                             'fo:padding':"0.097cm",
+                             'fo:border':"0.05pt solid #000000"})
+                        # next cell is in next column --> increase col number
+                        col_nb += 1
+                    # Update counters at the end of a row
+                    row_nb += 1
+                    col_nb = 0
 
         def node_to_string(node):
             result = node.toxml()
@@ -781,9 +852,10 @@ class Renderer(object):
             # All double linebreak should be replaced with an empty paragraph
             return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
 
-
-        return ''.join(node_as_str for node_as_str in map(node_to_string,
+        final_result = ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
+
+        return final_result
 
     def image_filter(self, value, *args, **kwargs):
         """Store value into template_images and return the key name where this
