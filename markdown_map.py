@@ -58,6 +58,14 @@ transform_map = {
 		}
 	},
 
+	'img': {
+		'replace_with': 'draw:frame',
+		'attributes': {
+			'svg:width':'100%',
+			'style:rel-height':'scale'
+		}
+	},
+
     'p': common_styles['p'],
     'strong': common_styles['strong'],
     'em': common_styles['italic'],

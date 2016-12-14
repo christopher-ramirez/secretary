@@ -758,6 +758,31 @@ class Renderer(object):
                             odt_node.setAttribute('xlink:href',
                                 html_node.getAttribute('href'))
 
+                if tag == 'img':
+                    # Insert <draw:image> tag into the frame tag
+                    image_node = self.create_node(xml_object,
+                                                  'draw:image',
+                                                  parent=odt_node)
+                    # Set attributes of <draw:image>
+                    image_node.setAttribute('xlink:type', 'simple')
+                    image_node.setAttribute('xlink:show', 'embed')
+                    image_node.setAttribute('xlink:actuate', 'onLoad')
+                    if html_node.hasAttribute('src'):
+                        # All of the pictures are stored in the "Pictures"
+                        # archive folder (see add_media_to_archive())
+                        image_name = html_node.getAttribute('src').split('/')[-1]
+                        image_node.setAttribute('xlink:href',
+                                                'Pictures/' + image_name)
+
+                    # Add picture to the archive
+                    # href should contain absolute or relative path to local image
+                    # name argument must not contain the extension
+                    pic = self.media_callback(html_node.getAttribute('src'))
+                    import ipdb; ipdb.set_trace()
+                    self.add_media_to_archive(media = pic[0],
+                                              mime = pic[1],
+                                              name = path.splitext(image_name)[0])
+
                 # Does the node need to create a style?
                 if 'style' in transform_map[tag]:
                     name = transform_map[tag]['style']['name']
