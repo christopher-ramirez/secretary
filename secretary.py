@@ -29,6 +29,7 @@ import re
 import sys
 import logging
 import zipfile
+import PIL.Image
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
@@ -769,19 +770,36 @@ class Renderer(object):
                     image_node.setAttribute('xlink:actuate', 'onLoad')
                     if html_node.hasAttribute('src'):
                         # All of the pictures are stored in the "Pictures"
-                        # archive folder (see add_media_to_archive())
-                        image_name = html_node.getAttribute('src').split('/')[-1]
-                        image_node.setAttribute('xlink:href',
-                                                'Pictures/' + image_name)
+                        # archive folder (see add_media_to_archive()).
+                        # src should contain absolute or relative path to local image
+                        pic_path = html_node.getAttribute('src')
+                        if path.isfile(pic_path):
+                            # Get image name without extension if there is one
+                            image_name = path.splitext(pic_path.split('/')[-1])[0]
 
-                    # Add picture to the archive
-                    # href should contain absolute or relative path to local image
-                    # name argument must not contain the extension
-                    pic = self.media_callback(html_node.getAttribute('src'))
-                    import ipdb; ipdb.set_trace()
-                    self.add_media_to_archive(media = pic[0],
-                                              mime = pic[1],
-                                              name = path.splitext(image_name)[0])
+                            # Get picture real format and compute size scale
+                            pil_pic = PIL.Image.open(pic_path)
+                            pic_mime = "image/" + pil_pic.format.lower()
+                            pic_scale = float(pil_pic.size[1]) / float(pil_pic.size[0]) # pic_scale = height / width
+
+                            # Add picture to the archive
+                            # name argument must not contain the extension
+                            pic = self.media_callback(pic_path)
+                            self.add_media_to_archive(media = pic[0],
+                                                      mime = pic_mime,
+                                                      name = image_name)
+
+                            # Add picture refenrece to the image node
+                            image_node.setAttribute('xlink:href',
+                                                    'Pictures/' + image_name + guess_extension(pic_mime))
+                            # Adjust picture scale
+                            # 10 cm for width is arbitrary. It is the only solution
+                            # I found until now to keep picture original scale
+                            # It does not seem to be possible to keep scale and have a 100% width
+                            odt_node.setAttribute('svg:width', '10.0cm')
+                            odt_node.setAttribute('svg:height', str(10.0*pic_scale)+'cm')
+                        else:
+                            self.log.debug("No image at path=%s" % pic_path)
 
                 # Does the node need to create a style?
                 if 'style' in transform_map[tag]:

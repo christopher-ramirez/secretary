@@ -61,8 +61,7 @@ transform_map = {
 	'img': {
 		'replace_with': 'draw:frame',
 		'attributes': {
-			'svg:width':'100%',
-			'style:rel-height':'scale'
+			'text:anchor-type': 'as-char'
 		}
 	},
 
