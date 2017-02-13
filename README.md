@@ -93,6 +93,10 @@ Although most of the time the automatic handling of control flow in secretary ma
 * `after::cell`: Same as `after::row` but for a table cell.
 > Field content is the control flow tag you insert with the Writer *input field*
 
+### Hyperlink  Support
+LibreOffice by default escapes every URL in links, pictures or any other element supporting hyperlink functionallity. This can be a problem if you need to generate dynamic links because your template logic is URL encoded and impossible to be handled by the Jinja engine. Secretary solves this problem by reserving the `secretary` URI scheme. If you need to create dynamic links in your documents, prepend every link with the `secretary:` scheme.
+
+So for example if you have the following dynamic link: `https://mysite/products/{{ product.id }}`, prepend it with the **`secretary:`** screme, leaving the final link as `secretary:https://mysite/products/{{ product.id }}`.
 
 ### Image Support
 Secretary allows you to use placeholder images in templates that will be replaced when rendering the final document. To create a placeholder image on your template:
