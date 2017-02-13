@@ -96,7 +96,7 @@ Although most of the time the automatic handling of control flow in secretary ma
 ### Hyperlink  Support
 LibreOffice by default escapes every URL in links, pictures or any other element supporting hyperlink functionallity. This can be a problem if you need to generate dynamic links because your template logic is URL encoded and impossible to be handled by the Jinja engine. Secretary solves this problem by reserving the `secretary` URI scheme. If you need to create dynamic links in your documents, prepend every link with the `secretary:` scheme.
 
-So for example if you have the following dynamic link: `https://mysite/products/{{ product.id }}`, prepend it with the **`secretary:`** screme, leaving the final link as `secretary:https://mysite/products/{{ product.id }}`.
+So for example if you have the following dynamic link: `https://mysite/products/{{ product.id }}`, prepend it with the **`secretary:`** scheme, leaving the final link as `secretary:https://mysite/products/{{ product.id }}`.
 
 ### Image Support
 Secretary allows you to use placeholder images in templates that will be replaced when rendering the final document. To create a placeholder image on your template:
@@ -151,6 +151,7 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+* **0.2.14**: Implement dynamic links escaping and fix #33.
 * **0.2.13**: Fix reported bug in markdown filter outputing emply lists.
 * **0.2.11**: Fix bug when unescaping `&quot;`, `&apos;`, `&lt;`, `&gt;` and '&amp;' inside Jinja expressions.
 * **0.2.10**: ---
