@@ -551,6 +551,8 @@ class Renderer(object):
 
             return final_xml
         except ExpatError as e:
+            if not 'result' in locals():
+                result = xml_source
             near = result.split('\n')[e.lineno -1][e.offset-200:e.offset+200]
             raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
                              (ErrorString(e.code), e.lineno, e.offset, near))
