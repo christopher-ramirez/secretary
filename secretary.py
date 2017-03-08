@@ -29,6 +29,7 @@ import re
 import sys
 import logging
 import zipfile
+import copy
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
@@ -733,7 +734,28 @@ class Renderer(object):
             return ''
 
         from xml.dom import Node
-        from markdown_map import transform_map
+
+        try:
+            transform_map = self.transform_map
+        except AttributeError:
+            from markdown_map import transform_map
+            self.transform_map = copy.deepcopy (transform_map)
+            for definition in self.transform_map.values():
+                style_name = definition.get('style_attributes', {}).get('style-name')
+                if style_name is not None:
+                    pass
+            for style in self.styles.getElementsByTagName('style:style'):
+                if style.hasAttribute('style:family') and style.getAttribute('style:family') == 'paragraph':
+                    if not style.hasAttribute('style:parent-style-name'):
+                        self.transform_map['p']['style_attributes']['style-name'] = style.getAttribute('style:name')
+            for autostyle in self.styles.getElementsByTagName('office:automatic-styles'):
+                for liststyle in autostyle.getElementsByTagName('text:list-style'):
+                    if liststyle.getElementsByTagName('text:list-level-style-bullet'):
+                        definition = self.transform_map['ul']
+                    else:
+                        definition = self.transform_map['ol']
+                    definition['style_attributes'] = definition.get('style_attributes', {})
+                    definition['style_attributes']['style-name'] = liststyle.getAttribute('style:name')
 
         styles_cache = {}   # cache styles searching
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
@@ -742,10 +764,10 @@ class Renderer(object):
         # Some tags may require extra attributes in ODT.
         # Additional attributes are indicated in the 'attributes' property
 
-        for tag in transform_map:
+        for tag in self.transform_map:
             html_nodes = xml_object.getElementsByTagName(tag)
             for html_node in html_nodes:
-                odt_node = xml_object.createElement(transform_map[tag]['replace_with'])
+                odt_node = xml_object.createElement(self.transform_map[tag]['replace_with'])
 
                 # Transfer child nodes
                 if html_node.hasChildNodes():
@@ -765,13 +787,13 @@ class Renderer(object):
                         container.appendChild(child_node.cloneNode(True))
 
                 # Add style-attributes defined in transform_map
-                if 'style_attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['style_attributes'].items():
+                if 'style_attributes' in self.transform_map[tag]:
+                    for k, v in self.transform_map[tag]['style_attributes'].items():
                         odt_node.setAttribute('text:%s' % k, v)
 
                 # Add defined attributes
-                if 'attributes' in transform_map[tag]:
-                    for k, v in transform_map[tag]['attributes'].items():
+                if 'attributes' in self.transform_map[tag]:
+                    for k, v in self.transform_map[tag]['attributes'].items():
                         odt_node.setAttribute(k, v)
 
                     # copy original href attribute in <a> tag
@@ -781,16 +803,16 @@ class Renderer(object):
                                 html_node.getAttribute('href'))
 
                 # Does the node need to create an style?
-                if 'style' in transform_map[tag]:
-                    name = transform_map[tag]['style']['name']
+                if 'style' in self.transform_map[tag]:
+                    name = self.transform_map[tag]['style']['name']
                     if not name in styles_cache:
                         style_node = self.get_style_by_name(name)
 
                         if style_node is None:
                             # Create and cache the style node
                             style_node = self.insert_style_in_content(
-                                name, transform_map[tag]['style'].get('attributes', None),
-                                **transform_map[tag]['style']['properties'])
+                                name, self.transform_map[tag]['style'].get('attributes', None),
+                                **self.transform_map[tag]['style']['properties'])
                             styles_cache[name] = style_node
 
                 html_node.parentNode.replaceChild(odt_node, html_node)
