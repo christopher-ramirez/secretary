@@ -139,6 +139,7 @@ class Renderer(object):
             # Register filters
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
+            self.environment.filters['html'] = self.html_filter
             self.environment.filters['image'] = self.image_filter
 
         self.media_path = kwargs.pop('media_path', '')
@@ -351,8 +352,8 @@ class Renderer(object):
             is_block = self._is_block_tag(content)
             scale_to = tag.getAttribute('text:description').strip().lower()
 
-            if content.lower().find('|markdown') > 0:
-                # Take whole paragraph when handling a markdown field
+            if content.lower().find('|markdown') > 0 or content.lower().find('|html') > 0:
+                # Take whole paragraph when handling a markdown or html field
                 scale_to = 'text:p'
 
             if scale_to:
@@ -716,16 +717,25 @@ class Renderer(object):
         if not isinstance(markdown_text, basestring):
             return ''
 
-        from xml.dom import Node
-        from markdown_map import transform_map
-
         try:
             from markdown2 import markdown
         except ImportError:
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
+        return self.html_filter(markdown(markdown_text))
+
+    def html_filter(self, html_text):
+        """
+            Convert an html text into a ODT formated text
+        """
+
+        if not isinstance(html_text, basestring):
+            return ''
+
+        from xml.dom import Node
+        from markdown_map import transform_map
+
         styles_cache = {}   # cache styles searching
-        html_text = markdown(markdown_text)
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
