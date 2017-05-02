@@ -8,5 +8,5 @@ env:
 - TOXENV=py26
 install: pip install -U tox
 language: python
-python: 3.6
+python: 3.5
 script: tox -e ${TOXENV}
