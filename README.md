@@ -1,5 +1,13 @@
 # SECRETARY
 
+                                                                                                                  
+<a href="https://pypi.python.org/pypi/secretary">
+<img src="https://img.shields.io/pypi/v/secretary.svg">
+</a>
+<a href="https://travis-ci.org/christopher-ramirez/secretary">
+<img src="https://img.shields.io/travis/christopher-ramirez/secretary.svg">
+</a>
+
 #### Take the power of Jinja2 templates to OpenOffice and LibreOffice and create reports in your web applications.
 
 
