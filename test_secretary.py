@@ -18,6 +18,7 @@ def test_pad_string():
     assert pad_string('TEST', 4) == 'TEST'
     assert pad_string(1) == '00001'
 
+
 class RenderTestCase(TestCase):
     def setUp(self):
         root = os.path.dirname(__file__)
@@ -63,7 +64,6 @@ class RenderTestCase(TestCase):
         for test, expect in test_samples.items():
             assert self.engine._encode_escape_chars(test) == expect
 
-
     def _test_is_jinja_tag(self):
         assert self._is_jinja_tag('{{ foo }}')==True
         assert self._is_jinja_tag('{ foo }')==False
@@ -79,3 +79,12 @@ class RenderTestCase(TestCase):
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
 
+    def test_newline(self):
+        xml_text = '<text:span text:style-name="T5">Teststra&#223;e 5\n1234 L&#252;nen</text:span>'
+        result = Renderer._encode_escape_chars(xml_text)
+        assert result == '<text:span text:style-name="T5">Teststra&#223;e 5<text:line-break/>1234 L&#252;nen</text:span>'
+
+    def test_evil_newline(self):
+        xml_text = '<text:span>\n</text:span><do_not_touch>\n</do_not_touch>'
+        result = Renderer._encode_escape_chars(xml_text)
+        assert result == '<text:span><text:line-break/></text:span><do_not_touch>\n</do_not_touch>'
