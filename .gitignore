@@ -3,6 +3,11 @@
 *.*~
 *.egg
 *.egg-info
+*.odt
+*.txt
+.tox
+.cache
+.vscode
 dist
 build
 eggs
