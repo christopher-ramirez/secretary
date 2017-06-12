@@ -397,14 +397,32 @@ class Renderer(object):
 
     def _unescape_entities(self, xml_text):
         """
-        Unescape '&amp;', '&lt;', '&quot;' and '&gt;' within jinja instructions.
-        The regexs rules used here are compiled in _compile_escape_expressions.
+        Unescape links and '&amp;', '&lt;', '&quot;' and '&gt;' within jinja
+        instructions. The regexs rules used here are compiled in
+        _compile_escape_expressions.
         """
         for regexp, replacement in self.escape_map.items():
             while True:
                 xml_text, substitutions = regexp.subn(replacement, xml_text)
                 if not substitutions:
                     break
+
+        return self._unescape_links(xml_text)
+
+    def _unescape_links(self, xml_text):
+        """Fix Libreoffice auto escaping of xlink:href attribute values.
+        This unescaping is only done on 'secretary' scheme URLs."""
+        import urllib
+        robj = re.compile(r'(?is)(xlink:href=\")secretary:(.*?)(\")')
+
+        def replacement(match):
+            return ''.join([match.group(1), urllib.unquote(match.group(2)),
+                            match.group(3)])
+
+        while True:
+            xml_text, rep = robj.subn(replacement, xml_text)
+            if not rep:
+                break
 
         return xml_text
 
@@ -413,7 +431,7 @@ class Renderer(object):
         """
         Replace line feed and/or tabs within text:span entities.
         """
-        find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t])[^<]*?)</text:\1>'
+        find_pattern = r'(?is)<text:([\S]+?).*?>([^>]*?([\n\t])[^<]*?)</text:\1>'
         for m in re.findall(find_pattern, xml_text):
             replacement = m[1].replace('\n', '<text:line-break/>')
             replacement = replacement.replace('\t', '<text:tab/>')
