@@ -1,6 +1,6 @@
 # SECRETARY
 
-                                                                                                                  
+
 <a href="https://pypi.python.org/pypi/secretary">
 <img src="https://img.shields.io/pypi/v/secretary.svg">
 </a>
@@ -159,6 +159,7 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+* **0.2.15**: Fix bug reported in #39 escaping Line-Feed and Tab chars inside `text:` elements.
 * **0.2.14**: Implement dynamic links escaping and fix #33.
 * **0.2.13**: Fix reported bug in markdown filter outputing emply lists.
 * **0.2.11**: Fix bug when unescaping `&quot;`, `&apos;`, `&lt;`, `&gt;` and '&amp;' inside Jinja expressions.
