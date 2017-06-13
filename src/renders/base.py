@@ -36,14 +36,12 @@ class Job(object):
 
         return final_xml.toxml().encode('ascii', 'xmlcharrefreplace')
 
-    def add_document_media(self, media_parent_node, media, mimetype=None):
+    def add_document_media(self, reference_node, media, **kwargs):
         """Adds a media to current document."""
         raise NotImplementedError
 
     def _before_render_xml(self, xml):
-        return
         self.renderer.notify_xml_render_start(self, xml)
 
     def _after_render_xml(self, xml):
-        return
         self.renderer.notify_xml_render_end(self, xml)

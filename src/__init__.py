@@ -34,7 +34,7 @@ from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from jinja2 import Environment, Undefined
 
-from filters import PadStringFilter, ImageFilter
+from filters import register_filters
 
 from renders.odtrender import ODTRender
 
@@ -46,7 +46,6 @@ except AttributeError:
     # On Python 2.6 sys.version_info is a tuple
     if not isinstance(sys.version_info, tuple):
         raise
-
 
 # ---- Exceptions
 class SecretaryError(Exception):
@@ -104,6 +103,13 @@ class MediaInterface(object):
         mime = guess_type(filename)
         return (open(filename, 'rb'), mime[0] if mime else None)
 
+__GLOB_FILTERS__ = {}
+def register_filter(filter_name):
+    '''Registers a Secretary filter.'''
+    def _add_filter(filter_implementation):
+        __GLOB_FILTERS__[filter_name] = filter_implementation
+
+    return _add_filter
 
 class RendererFilterInterface(object):
     """Provies an interface for attaching filters to Renderer environment and jobs."""
@@ -113,11 +119,20 @@ class RendererFilterInterface(object):
     before_xml_render_callbacks = []
     after_xml_render_callbacks = []
 
-    def register_filter(self, filtername, filter):
-        implementation = filter
-        if hasattr(filter, 'render') and hasattr(filter.render, '__call__'):
-            self.filters[filtername] = filter
-            implementation = filter.render
+    def __init__(self, **kwargs):
+        super(RendererFilterInterface, self).__init__(**kwargs)
+        register_filters(sys.modules[__name__])
+
+        # Register global filters
+        map(lambda (f, i): self.register_filter(f, i), __GLOB_FILTERS__.items())
+
+    def register_filter(self, filtername, filter_imp):
+        """Registers a secretary filter."""
+        implementation = filter_imp
+        if hasattr(filter_imp, 'render') and hasattr(filter_imp.render, '__call__'):
+            filter_instance = filter_imp(self)
+            self.filters[filtername] = filter_instance
+            implementation = filter_instance.render
 
         self.environment.filters[filtername] = implementation
 
@@ -150,7 +165,7 @@ class RendererFilterInterface(object):
             callback(self, job, xml)
 
 
-class Renderer(MediaInterface, RendererFilterInterface):
+class Renderer(RendererFilterInterface, MediaInterface):
     """
         Main engine to convert and ODT document into a jinja
         compatible template.
@@ -176,12 +191,13 @@ class Renderer(MediaInterface, RendererFilterInterface):
                          create a new environment for this class instance.
 
         """
-        super(Renderer, self).__init__(**kwargs)
         self.log = logging.getLogger(__name__)
         self.environment = environment or Environment(
             undefined=UndefinedSilently, autoescape=True)
 
         self.environment.filters['markdown'] = lambda v: v
+
+        super(Renderer, self).__init__(**kwargs)
 
     def render(self, template, **kwargs):
         """
