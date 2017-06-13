@@ -251,9 +251,10 @@ class XMLRender(object):
     def encode_feed_chars(xml_text):
         """Replace line feed and/or tabs within text:span entities."""
         find_pattern = r'(?is)<text:([\S]+?).*?>([^>]*?([\n\t])[^<]*?)</text:\1>'
-        for m in re.findall(find_pattern, xml_text):
-            replacement = m[1].replace('\n', '<text:line-break/>')
+        for m in re.finditer(find_pattern, xml_text):
+            content = m.group(0)
+            replacement = content.replace('\n', '<text:line-break/>')
             replacement = replacement.replace('\t', '<text:tab/>')
-            xml_text = xml_text.replace(m[1], replacement)
+            xml_text = xml_text.replace(content, replacement)
 
         return xml_text
