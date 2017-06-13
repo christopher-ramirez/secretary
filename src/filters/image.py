@@ -9,8 +9,14 @@ class ImageFilter(object):
         renderer.register_after_xml_render(self._after_render_xml)
 
     def render(self, value, *args, **kwargs):
+        '''
+        Filter implementation. Returns an unique value identifying value received.
+        When the engine finishes rendering the current XML document, replace the
+        unique values generated here with the final images retrived throught
+        renderer.media_callback function.
+        '''
         placeholder_value = uuid4().hex
-        self.images[placeholder_value] = {
+        self.placeholders[placeholder_value] = {
             'value': value,
             'args': args,
             'kwargs': kwargs
@@ -18,18 +24,18 @@ class ImageFilter(object):
         return placeholder_value
 
     def _before_render_xml(self, renderer, job, xml):
-        self.images = dict()
+        self.placeholders = dict()
 
     def _after_render_xml(self, renderer, job, xml):
-        if len(self.images.keys()):
+        if len(self.placeholders.keys()):
             self._replace_images(job, xml)
 
-        self.images = None
+        self.placeholders = None
 
     def _replace_images(self, job, xml):
         for draw_frame in self.draw_frames(xml):
             placeholder_value = draw_frame.getAttribute('draw:name')
-            if not placeholder_value in self.images:
+            if not placeholder_value in self.placeholders:
                 continue
 
             # Keep draw:frame attributes in frame_attrs dictionary
@@ -37,7 +43,7 @@ class ImageFilter(object):
             frame_attrs, image_attrs = self._frame_and_image_attrs(draw_frame)
 
             # Request to media loader the image media to use
-            mc_data = self.images[placeholder_value]
+            mc_data = self.placeholders[placeholder_value]
             media = self.renderer.media_callback(
                 mc_data['value'], *mc_data['args'], frame_attrs=frame_attrs,
                 image_attrs=image_attrs, **mc_data['kwargs']
@@ -53,7 +59,7 @@ class ImageFilter(object):
                 continue
 
             job.add_document_media(draw_image, media[0], mimetype=media[1],
-                                   name=placeholder_value)
+                                   name=placeholder_value, xml=xml)
 
     def _frame_and_image_attrs(self, draw_frame):
         '''Returns a tuple of two dictionaries. The first contains the

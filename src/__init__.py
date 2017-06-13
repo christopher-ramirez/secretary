@@ -36,7 +36,7 @@ from jinja2 import Environment, Undefined
 
 from filters import register_filters
 
-from renders.odtrender import ODTRender
+from renders.odtrender import ODTRender, FlatODTRender
 
 try:
     if sys.version_info.major == 3:
@@ -211,5 +211,5 @@ class Renderer(RendererFilterInterface, MediaInterface):
                 A binary stream which contains the rendered document.
         """
 
-        render_job = ODTRender(self, template, **kwargs)
+        render_job = FlatODTRender(self, template, **kwargs)
         return render_job.render()

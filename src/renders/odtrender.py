@@ -1,6 +1,7 @@
 import sys
 import logging
 import zipfile
+import base64
 from io import BytesIO
 from os import path
 from xml.dom.minidom import parseString
@@ -88,3 +89,32 @@ class ODTRender(Job):
         zip_file.writestr('META-INF/manifest.xml', self.manifest.toxml().encode('ascii'))
 
         return output_stream
+
+class FlatODTRender(Job):
+    '''
+    Implements rendering of Flat ODT files.
+    '''
+    def render(self):
+        xml_source = self.template.read(-1)
+
+        if not xml_source:
+            return None
+
+        final_xml = self.render_xml(xml_source)
+        return final_xml
+
+    def add_document_media(self, reference_node, media, **kwargs):
+        xml = kwargs.pop('xml')
+        base64_content = xml.createTextNode(base64.encodestring(media.read(-1)))
+        base64_node = xml.createElement('office:binary-data')
+        base64_node.appendChild(base64_content)
+
+        current_binary_data = None
+        for child in reference_node.childNodes:
+            if child.nodeName == 'office:binary-data':
+                current_binary_data = child
+
+        if current_binary_data:
+            reference_node.replaceChild(base64_node, current_binary_data)
+        else:
+            reference_node.appendChild(base64_node)
