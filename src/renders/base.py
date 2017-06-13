@@ -36,6 +36,10 @@ class Job(object):
 
         return final_xml.toxml().encode('ascii', 'xmlcharrefreplace')
 
+    def add_document_media(self, media_parent_node, media, mimetype=None):
+        """Adds a media to current document."""
+        raise NotImplementedError
+
     def _before_render_xml(self, xml):
         return
         self.renderer.notify_xml_render_start(self, xml)
