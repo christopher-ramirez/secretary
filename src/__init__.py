@@ -1,7 +1,3 @@
-#! /usr/bin/python
-# -*- coding: utf-8 -*-
-
-
 '''
 Secretary
     This project is a document engine which make use of LibreOffice documents
