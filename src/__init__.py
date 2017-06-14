@@ -195,8 +195,6 @@ class Renderer(RendererFilterInterface, MediaInterface):
         self.environment = environment or Environment(
             undefined=UndefinedSilently, autoescape=True)
 
-        self.environment.filters['markdown'] = lambda v: v
-
         super(Renderer, self).__init__(**kwargs)
 
     def render(self, template, **kwargs):

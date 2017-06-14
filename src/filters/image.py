@@ -1,7 +1,6 @@
 import logging
 from uuid import uuid4
 
-
 class ImageFilter(object):
     def __init__(self, renderer):
         self.renderer = renderer

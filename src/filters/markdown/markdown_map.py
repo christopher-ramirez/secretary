@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from random import randint
 
 # Transform map used by the markdown filter. transform_map have
@@ -50,13 +48,13 @@ common_styles = {
 }
 
 transform_map = {
-	'a': {
-		'replace_with': 'text:a',
-		'attributes': {
-			'xlink:type': 'simple',
-			'xlink:href': ''
-		}
-	},
+    'a': {
+        'replace_with': 'text:a',
+        'attributes': {
+            'xlink:type': 'simple',
+            'xlink:href': ''
+        }
+    },
 
     'p': common_styles['p'],
     'strong': common_styles['strong'],
@@ -103,7 +101,7 @@ transform_map = {
     'code': {
         'replace_with': 'text:span',
         'style_attributes': {
-            'style-name': 'Preformatted_20_Text'
+            'style-name': 'markdown_code'
         }
     },
 
