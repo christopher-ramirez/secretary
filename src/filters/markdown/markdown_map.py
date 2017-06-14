@@ -1,18 +1,22 @@
 from random import randint
 
-# Transform map used by the markdown filter. transform_map have
-# instructions of how to transform a HTML style tag into a ODT document
-# styled tag. Some ODT tags may need extra attributes; these are defined
-# as a dict in the 'style_attributes' key. Also, some tags may need to create
-# new styles in the document.
+'''
+    Transform map used by the markdown filter. transform_map has
+    instructions of how to transform a HTML style tag into a ODT document tag.
+    Some ODT tags may need extra attributes. Those are defined as a dict in
+    'style_attributes' property.
+
+    Some tags also may need to create new styles in the document. If this is
+    the case, a "style" property should be defined with name of the style to
+    create and a "properties" attribute defining style:text-properties values.
+'''
 
 common_styles = {
-	'italic': {
+    'italic': {
         'replace_with': 'text:span',
         'style_attributes': {
             'style-name': 'markdown_italic'
         },
-
         'style': {
             'name': 'markdown_italic',
             'properties': {

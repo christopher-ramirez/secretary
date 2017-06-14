@@ -1,4 +1,11 @@
+'''
+    Implements Secretary's "pad" filter.
+'''
+
 class PadStringFilter():
+    '''
+    pad filter implementation.
+    '''
     def __init__(self, renderer):
         pass
 

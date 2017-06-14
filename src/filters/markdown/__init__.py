@@ -1,9 +1,16 @@
+'''
+    Implements Secretary's "markdown" filter.
+'''
+
 from xml.dom import Node
-from markdown2 import markdown
 from xml.dom.minidom import parseString
+from markdown2 import markdown
 from markdown_map import transform_map
 
 class MarkdownFilter(object):
+    '''
+    markdown filter implemetation.
+    '''
     def __init__(self, renderer):
         self.renderer = renderer
         renderer.register_before_xml_render(self._before_render_xml)
@@ -30,16 +37,16 @@ class MarkdownFilter(object):
             # All double linebreaks should be converted to an empty paragraph
             return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
 
-        # print(html_object.getElementsByTagName('html')[0].toprettyxml())
         str_nodes = map(_node_to_str,
                         html_object.getElementsByTagName('html')[0].childNodes)
         return ''.join([node for node in str_nodes])
 
     @staticmethod
     def markdown_to_html(value):
-        '''Converts markdown value to HTML, returning a parsed XML object'''
+        '''
+        Converts markdown value to HTML, returning a parsed XML object.
+        '''
         html = markdown(value)
-        print(html)
         return parseString(
             '<html>{}</html>'.format(html.encode('ascii', 'xmlcharrefreplace'))
         )
@@ -51,8 +58,10 @@ class MarkdownFilter(object):
         map(lambda t: self.html_tag_to_odt(html, t, transform_props), html_tags)
 
     def html_tag_to_odt(self, html, tag, transform):
-        '''Replace tag in html with a new odt tag created from the instructions
-        in tranform dictionary.'''
+        '''
+        Replace tag in html with a new odt tag created from the instructions
+        in tranform dictionary.
+        '''
         odt_tag = html.createElement(transform['replace_with'])
 
         # First lets work with the content

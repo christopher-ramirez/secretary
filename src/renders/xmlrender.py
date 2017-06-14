@@ -1,107 +1,41 @@
+'''
+    Implements XMLRender class.
+
+    XMLRender is responsible for adapting an ODT XML document so it can
+    be transformed rendered using Jinja2.
+
+    The two key functions XMLRender performs are:
+    1.  Transform "text:text-input" tags to text:span when these are variables
+        of Text node elements when these are flow control tags.
+    2.  Adapt and move flow control tags so they perform the desired functionallity.
+'''
+
 import re
-import logging
-from xml.dom.minidom import parseString
-from xml.parsers.expat import ExpatError, ErrorString
-
-
-class JinjaSafeTags(object):
-    """A class used as an interface for working with jinja tags delimeters."""
-    def __init__(self, environment):
-        self.environment = environment
-        self._compile_tags()
-        self._compile_escape_expressions()
-
-    def _compile_tags(self):
-        self.tag_pattern = re.compile(r'(?is)^({0}|{1}).*({2}|{3})$'.format(
-            self.environment.variable_start_string,
-            self.environment.block_start_string,
-            self.environment.variable_end_string,
-            self.environment.block_end_string
-        ))
-
-        self.block_pattern = re.compile(r'(?is)^{0}.*{1}$'.format(
-            self.environment.block_start_string,
-            self.environment.block_end_string
-        ))
-
-    def _compile_escape_expressions(self):
-        self.escape_map = dict()
-        unescape_rules = {
-            r'&gt;': r'>',
-            r'&lt;': r'<',
-            r'&amp;': r'&',
-            r'&quot;': r'"',
-            r'&apos;': r'\'',
-        }
-
-        for key, value in unescape_rules.items():
-            exp = r'(?is)(({0}|{1})[^{3}{4}]*?)({2})([^{0}{1}]*?({3}|{4}))'
-            key = re.compile(exp.format(
-                self.environment.variable_start_string,
-                self.environment.block_start_string,
-                key,
-                self.environment.variable_end_string,
-                self.environment.block_end_string
-            ))
-
-            self.escape_map[key] = r'\1{0}\4'.format(value)
-
-    def is_tag(self, tag):
-        """Returns True if tag is a valid jinja instruction tag."""
-        return len(self.tag_pattern.findall(tag)) > 0
-
-    def is_block_tag(self, tag):
-        """Returns True is tag is a jinja flow control tag."""
-        return len(self.block_pattern.findall(tag)) > 0
-
-    def unescape_entities(self, xml_text):
-        """
-        Unescape links and '&amp;', '&lt;', '&quot;' and '&gt;' within jinja
-        instructions. The regexs rules used here are compiled in
-        _compile_escape_expressions.
-        """
-        for regexp, replacement in self.escape_map.items():
-            while True:
-                xml_text, substitutions = regexp.subn(replacement, xml_text)
-                if not substitutions:
-                    break
-
-        return self._unescape_links(xml_text)
-
-    def _unescape_links(self, xml_text):
-        """Fix Libreoffice auto escaping of xlink:href attribute values.
-        This unescaping is only done on 'secretary' scheme URLs."""
-        import urllib
-        robj = re.compile(r'(?is)(xlink:href=\")secretary:(.*?)(\")')
-
-        def replacement(match):
-            return ''.join([match.group(1), urllib.unquote(match.group(2)),
-                            match.group(3)])
-
-        while True:
-            xml_text, rep = robj.subn(replacement, xml_text)
-            if not rep:
-                break
-
-        return xml_text
+from base import JinjaTagsUtils
 
 class XMLRender(object):
+    '''
+    Renders a XML document of OpenDocument format.
+    '''
     def __init__(self, job, XMLDocument):
         self.job = job
-        self.jt = JinjaSafeTags(job.renderer.environment)
+        self.tags = JinjaTagsUtils(job.renderer.environment)
         self.document = XMLDocument
 
     def render(self, **kwargs):
-        """Returns a rendered XML string. Data is passed to this function as kwargs."""
+        '''
+        Returns a rendered XML string. Template data is passed as kwargs.
+        '''
         self.prepare_tags()
-        template_source = self.jt.unescape_entities(self.document.toxml())
+        template_source = self.tags.unescape_entities(self.document.toxml())
         template_object = self.job.renderer.environment.from_string(template_source)
         result = self.encode_feed_chars(template_object.render(**kwargs))
 
         return result
 
     def prepare_tags(self):
-        """ Here we search for every field node present in xml_document.
+        '''
+        Here we search for every field node present in xml_document.
         For each field we found we do:
         * if field is a print field ({{ field }}), we replace it with a
           <text:span> node.
@@ -138,7 +72,7 @@ class XMLRender(object):
               </paragraph>
               {% endfor %}
           </table>
-        """
+        '''
 
         self._census_tags()
         map(self._prepare_tag, self.tags_in_document())
@@ -146,26 +80,30 @@ class XMLRender(object):
     def _census_tags(self):
         for tag in self.tags_in_document():
             content = tag.childNodes[0].data.strip()
-            is_block_tag = self.jt.is_block_tag(content)
+            is_block_tag = self.tags.is_block_tag(content)
             self.count_node_decendant_tags(tag.parentNode, is_block_tag)
 
     def tags_in_document(self):
-        """Yields a list if template tags in current document."""
+        '''
+        Yields a list if template tags in current document.
+        '''
         for tag in self.document.getElementsByTagName('text:text-input'):
             if not tag.hasChildNodes():
                 continue
 
             content = tag.childNodes[0].data.strip()
-            if not self.jt.is_tag(content):
+            if not self.tags.is_tag(content):
                 continue
 
             yield tag
 
     @staticmethod
     def count_node_decendant_tags(node, is_block_tag):
-        """Increate *node* tags_count property and block_count property
+        '''
+        Increate *node* tags_count property and block_count property
         if *is_block_tag* is True. Otherwise increase *var_count* property.
-        This is also done recursevely for this node parents."""
+        This is also done recursevely for this node parents.
+        '''
         if not node:
             return
 
@@ -189,7 +127,7 @@ class XMLRender(object):
         # common parent for this tag and any other tag.
         input_node = tag
         content = tag.childNodes[0].data.strip()
-        is_block = self.jt.is_block_tag(content)
+        is_block = self.tags.is_block_tag(content)
         take_upto = tag.getAttribute('text:description').strip().lower()
 
         # TODO: Lets filters override "take_upto" value
@@ -227,8 +165,10 @@ class XMLRender(object):
 
     @staticmethod
     def node_parent_of_name(node, name):
-        """Returns the node's parent with name equal to *name*.
-        Returns None if a parent with that name is not found."""
+        '''
+        Returns the node's parent with name equal to *name*.
+        Returns None if a parent with that name is not found.
+        '''
         if not hasattr(node, 'parentNode'):
             return None
 
@@ -249,7 +189,9 @@ class XMLRender(object):
 
     @staticmethod
     def encode_feed_chars(xml_text):
-        """Replace line feed and/or tabs within text:span entities."""
+        '''
+        Replace line feed and/or tabs within text:span entities.
+        '''
         find_pattern = r'(?is)<text:([\S]+?).*?>([^>]*?([\n\t])[^<]*?)</text:\1>'
         for m in re.finditer(find_pattern, xml_text):
             content = m.group(0)

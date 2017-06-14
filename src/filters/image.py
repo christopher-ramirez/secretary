@@ -1,7 +1,13 @@
-import logging
+'''
+    Implements Secretary's "image" filter.
+'''
+
 from uuid import uuid4
 
 class ImageFilter(object):
+    '''
+    Image filter implementation
+    '''
     def __init__(self, renderer):
         self.renderer = renderer
         renderer.register_before_xml_render(self._before_render_xml)
@@ -9,9 +15,9 @@ class ImageFilter(object):
 
     def render(self, value, *args, **kwargs):
         '''
-        Filter implementation. Returns an unique value identifying value received.
+        Returns a placeholder value identifying **value** and params received.
         When the engine finishes rendering the current XML document, replace the
-        unique values generated here with the final images retrived throught
+        placeholder values returned here with the final images retrived throught
         renderer.media_callback function.
         '''
         placeholder_value = uuid4().hex
@@ -27,11 +33,14 @@ class ImageFilter(object):
 
     def _after_render_xml(self, renderer, job, xml):
         if len(self.placeholders.keys()):
-            self._replace_images(job, xml)
+            self.replace_images(job, xml)
 
         self.placeholders = None
 
-    def _replace_images(self, job, xml):
+    def replace_images(self, job, xml):
+        '''
+        Replace placeholder values with final medias retrieved with callback_media.
+        '''
         for draw_frame in self.draw_frames(xml):
             placeholder_value = draw_frame.getAttribute('draw:name')
             if not placeholder_value in self.placeholders:
@@ -61,9 +70,11 @@ class ImageFilter(object):
                                    name=placeholder_value, xml=xml)
 
     def _frame_and_image_attrs(self, draw_frame):
-        '''Returns a tuple of two dictionaries. The first contains the
-        XML attributes of draw_frame. The second contains the XML
-        attributes of draw:image node (child of draw:frame).'''
+        '''
+        Returns a tuple of two dictionaries. The first contains the XML
+        attributes of draw:frame node. The second contains the attributes of
+        "draw:image" node (child of draw:frame).
+        '''
         frame_attrs = dict()
         map(lambda a: frame_attrs.update({a.name: a.value}),
             [draw_frame.attributes.item(i) for i in xrange(draw_frame.attributes.length)])
@@ -78,7 +89,9 @@ class ImageFilter(object):
 
     @staticmethod
     def draw_frames(xml):
-        '''Returns a generator returning draw:frame elements in xml'''
+        '''
+        Generator returning all draw:frame elements found in xml
+        '''
         for frame in xml.getElementsByTagName('draw:frame'):
             if not frame.hasChildNodes():
                 continue

@@ -7,9 +7,9 @@ from os import path
 from xml.dom.minidom import parseString
 from mimetypes import guess_type, guess_extension
 
-from base import Job
+from base import RenderJob
 
-class ODTRender(Job):
+class ODTRender(RenderJob):
     archive = None
     def render(self):
         """Implements rendering of ODT files."""
@@ -90,7 +90,7 @@ class ODTRender(Job):
 
         return output_stream
 
-class FlatODTRender(Job):
+class FlatODTRender(RenderJob):
     '''
     Implements rendering of Flat ODT files.
     '''
