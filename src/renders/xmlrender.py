@@ -29,18 +29,35 @@ class XMLRender(object):
         '''
         self.prepare_tags()
         template = self.tags.unescape_entities(self.document.toxml())
-
-        # activate autoescape for whole XML on jinja >= 2.9
-        integer_version = int(''.join(jinja2.__version__.split('.'))[:2])
-        if integer_version >= 29:
-            template = '{0} autoescape true {1}{xml}{0} endautoescape {1}'.format(
-                self.tags.block_start_string, self.tags.block_end_string,
-                xml=template
-            )
+        template = self.autoescape_for_xml(template)
 
         template_object = self.job.renderer.environment.from_string(template)
         result = self.encode_feed_chars(template_object.render(**kwargs))
         return result
+
+    def autoescape_for_xml(self, xml_source):
+        '''
+        Returns a version of xml_source with autoescape activated for the whole
+        source if the autoescape feature is not enabled in current environment
+        '''
+        env = self.job.renderer.environment
+        if (callable(env.autoescape) and env.autoescape('.xml')) or env.autoescape:
+            return xml_source
+
+        can_autoescape = False
+        jinja_int_ver = int(''.join(jinja2.__version__.split('.'))[:2])
+        if jinja_int_ver >= 29:
+            can_autoescape = True
+        else:
+            can_autoescape = ('jinja2.ext.AutoEscapeExtension' in env.extensions)
+
+        if can_autoescape:
+            return '{0} autoescape true {1}{xml}{0} endautoescape {1}'.format(
+                self.tags.block_start_string, self.tags.block_end_string,
+                xml=xml_source
+            )
+
+        return xml_source
 
     def prepare_tags(self):
         '''
