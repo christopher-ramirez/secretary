@@ -11,6 +11,7 @@
 '''
 
 import re
+import jinja2
 from base import JinjaTagsUtils
 
 class XMLRender(object):
@@ -27,10 +28,18 @@ class XMLRender(object):
         Returns a rendered XML string. Template data is passed as kwargs.
         '''
         self.prepare_tags()
-        template_source = self.tags.unescape_entities(self.document.toxml())
-        template_object = self.job.renderer.environment.from_string(template_source)
-        result = self.encode_feed_chars(template_object.render(**kwargs))
+        template = self.tags.unescape_entities(self.document.toxml())
 
+        # activate autoescape for whole XML on jinja >= 2.9
+        integer_version = int(''.join(jinja2.__version__.split('.'))[:2])
+        if integer_version >= 29:
+            template = '{0} autoescape true {1}{xml}{0} endautoescape {1}'.format(
+                self.tags.block_start_string, self.tags.block_end_string,
+                xml=template
+            )
+
+        template_object = self.job.renderer.environment.from_string(template)
+        result = self.encode_feed_chars(template_object.render(**kwargs))
         return result
 
     def prepare_tags(self):
