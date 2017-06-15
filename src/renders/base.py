@@ -148,12 +148,16 @@ class RenderJob(object):
         self._before_render_xml(xml)
         render_job = XMLRender(self, xml)
         rendered_xml_string = render_job.render(**self.variables)
+        rendered_xml_string = rendered_xml_string.encode('utf-8')
 
         try:
-            final_xml = parseString(rendered_xml_string.encode('utf-8'))
+            final_xml = parseString(rendered_xml_string)
             self._after_render_xml(final_xml)
         except ExpatError as e:
-            raise e
+            near = rendered_xml_string.split('\n')[e.lineno - 1][e.offset - 10:e.offset + 10]
+            raise ExpatError('Invalid char for XML at {}:{}, near of ...{}...'.format(
+                e.lineno, e.offset, near
+            ))
 
         return final_xml.toxml().encode('ascii', 'xmlcharrefreplace')
 
