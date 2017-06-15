@@ -17,6 +17,10 @@ class JinjaTagsUtils(object):
         self._compile_tags()
         self._compile_escape_expressions()
 
+        for attr in ['variable_start_string', 'variable_end_string',
+                     'block_start_string', 'block_end_string']:
+            setattr(self, attr, getattr(environment, attr, ''))
+
     def _compile_tags(self):
         self.tag_pattern = re.compile(r'(?is)^({0}|{1}).*({2}|{3})$'.format(
             self.environment.variable_start_string,
