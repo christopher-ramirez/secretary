@@ -5,6 +5,7 @@
 from xml.dom import Node
 from xml.dom.minidom import parseString
 from markdown2 import markdown
+from jinja2 import Markup
 from markdown_map import transform_map
 
 class MarkdownFilter(object):
@@ -39,7 +40,7 @@ class MarkdownFilter(object):
 
         str_nodes = map(_node_to_str,
                         html_object.getElementsByTagName('html')[0].childNodes)
-        return ''.join([node for node in str_nodes])
+        return Markup(''.join([node for node in str_nodes]))
 
     @staticmethod
     def markdown_to_html(value):
