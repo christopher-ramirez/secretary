@@ -9,7 +9,7 @@ Secretary
 
     Copyright (c) 2012-2017 By:
         * Christopher Ramirez <chris.ramirezg@gmail.com>
-        * Andrés Reyes Monge (github.com/armonge)
+        * Andres Reyes Monge (github.com/armonge)
         * Anton Kochnev (github.com/ak04nv)
         * DieterBuys (github.com/DieterBuys)
 
