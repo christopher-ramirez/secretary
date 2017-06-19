@@ -158,10 +158,13 @@ class RenderJob(object):
             final_xml = parseString(rendered_xml_string)
             self._after_render_xml(final_xml)
         except ExpatError as e:
-            near = rendered_xml_string.split('\n')[e.lineno - 1][e.offset - 10:e.offset + 10]
-            e.args = ('Invalid char for XML at {}:{}, near of ...{}...'.format(
-                e.lineno, e.offset, near
-            ),)
+            N_CONTEXT_CHARS = 38
+            line = rendered_xml_string.split('\n')[e.lineno - 1]
+            lower = max(0, e.offset - N_CONTEXT_CHARS)
+            upper = min(e.offset + N_CONTEXT_CHARS, len(line))
+            context = line[lower:upper]
+            e.args = ('Invalid XML near line {}, column {}\n{}\n{}'.format(
+                e.lineno, e.offset, context, '-' * (e.offset - lower) + '^'),)
             raise
 
         return final_xml.toxml().encode('ascii', 'xmlcharrefreplace')
