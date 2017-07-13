@@ -1,7 +1,8 @@
 '''
 Secretary
-    This project is a document engine which make use of LibreOffice documents
-    as templates and uses jinja2 to control variable printing and control flow.
+    This project is a document creation engine which uses LibreOffice documents
+    as templates and makes use jinja2 to control variable printing and control
+    flow.
 
     To render a template:
         engine = Renderer()
@@ -28,7 +29,7 @@ from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from jinja2 import Environment, Undefined
 
-from filters import register_filters
+from filters import RendererFilterInterface
 from renders.odtrender import ODTRender, FlatODTRender
 
 try:
@@ -40,9 +41,10 @@ except AttributeError:
     if not isinstance(sys.version_info, tuple):
         raise
 
-# ---- Exceptions
+
 class SecretaryError(Exception):
     pass
+
 
 class UndefinedSilently(Undefined):
     # Silently undefined,
@@ -57,32 +59,49 @@ class UndefinedSilently(Undefined):
     __call__ = return_new
     __getattr__ = return_new
 
+
 class MediaInterface(object):
-    '''
-    Provides media handling capabilities to Renderer class.
-    '''
+    '''Provides media handling capabilities to the Renderer class.'''
+
     def __init__(self, **kwargs):
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
 
     def media_loader(self, callback):
         '''
-        This sets the the media loader. A user defined function which
-        loads media. The function should take a template value, optionals
-        args and kwargs. Is media exists should return a tuple whose first
-        element if a file object type representing the media and its second
-        elements is the media mimetype.
+        Used as decorator. Sets media_loader property to the Render instance
 
-        See Renderer.fs_loader funcion for an example
+        This sets the the media loader callback. A user defined function which
+        handles the media loading. The function should take a template value,
+        optionals args and kwargs. If media exists, it should returns a tuple
+        whose first value if a file object type representing the media and
+        optionally its second value is the media mimetype.
+
+        Example:
+            engine = Renderer()
+            @engine.media_loader
+            def picture_loader_from_db(pic_id):
+                picture = db.picturec.findById(picId)
+                return (picture.content, picture.mimetype)
         '''
         self.media_callback = callback
         return callback
 
     def fs_loader(self, media, *args, **kwargs):
-        '''
-        Loads a file from the file system.
-        :param media: A file object or a relative or absolute path of a file.
-        :type media: unicode
+        '''Loads a file from the file system.
+
+        This is the default media loader in a Secretary Renderer instance.
+        When media is a string value representing a file path, Here we load
+        the file from the file system and returns its content and mime.
+
+        media, can also be a stream with the content of the media.
+
+        Args:
+            media: A stream object or a relative or absolute path of a file.
+                When it's a relative path, we use Renderer.media_path property
+                to resolve the absolute path.
+
+        Returns: A tuple with a stream object and mimetype of the media.
         '''
         if hasattr(media, 'seek') and hasattr(media, 'read'):
             return (media, 'image/jpeg')
@@ -90,7 +109,8 @@ class MediaInterface(object):
             filename = media
         else:
             if not self.media_path:
-                self.log.debug('media_path property not specified to load images from.')
+                self.log.debug(
+                    'media_path property not specified to load images from.')
                 return
 
             filename = path.join(self.media_path, media)
@@ -101,77 +121,10 @@ class MediaInterface(object):
         mime = guess_type(filename)
         return (open(filename, 'rb'), mime[0] if mime else None)
 
-__GLOB_FILTERS__ = {}
-
-def register_filter(filter_name):
-    '''
-    Registers a Secretary filter.
-    '''
-    def _add_filter(filter_implementation):
-        __GLOB_FILTERS__[filter_name] = filter_implementation
-
-    return _add_filter
-
-class RendererFilterInterface(object):
-    '''
-    Provies an interface for attaching filters to Renderer environment and jobs.
-    '''
-    filters = {}
-    on_job_starts_callbacks = []
-    on_job_ends_callbacks = []
-    before_xml_render_callbacks = []
-    after_xml_render_callbacks = []
-
-    def __init__(self, **kwargs):
-        super(RendererFilterInterface, self).__init__(**kwargs)
-        register_filters(sys.modules[__name__])
-
-        # Register global filters
-        map(lambda (f, i): self.register_filter(f, i), __GLOB_FILTERS__.items())
-
-    def register_filter(self, filtername, filter_imp):
-        '''
-        Registers a secretary filter.
-        '''
-        implementation = filter_imp
-        if hasattr(filter_imp, 'render') and hasattr(filter_imp.render, '__call__'):
-            filter_instance = filter_imp(self)
-            self.filters[filtername] = filter_instance
-            implementation = filter_instance.render
-
-        self.environment.filters[filtername] = implementation
-
-    def register_for_job_start(self, callback):
-        self.on_job_starts_callbacks.append(callback)
-
-    def register_for_job_end(self, callback):
-        self.on_job_ends_callbacks.append(callback)
-
-    def register_before_xml_render(self, callback):
-        self.before_xml_render_callbacks.append(callback)
-
-    def register_after_xml_render(self, callback):
-        self.after_xml_render_callbacks.append(callback)
-
-    def notify_job_start(self, job):
-        for callback in self.on_job_starts_callbacks:
-            callback(self, job)
-
-    def notify_job_end(self, job):
-        for callback in self.on_job_ends_callbacks:
-            callback(self, job)
-
-    def notify_xml_render_start(self, job, xml):
-        for callback in self.before_xml_render_callbacks:
-            callback(self, job, xml)
-
-    def notify_xml_render_end(self, job, xml):
-        for callback in self.after_xml_render_callbacks:
-            callback(self, job, xml)
 
 class Renderer(RendererFilterInterface, MediaInterface):
     '''
-    Main engine to convert and ODT document into a jinja
+    Main engine to convert an ODT document into a jinja
     compatible template.
 
     Basic use example:

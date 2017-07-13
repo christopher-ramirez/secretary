@@ -3,15 +3,11 @@
 '''
 
 from uuid import uuid4
+from base import SecretaryFilterInterface
 
-class ImageFilter(object):
-    '''
-    Image filter implementation
-    '''
-    def __init__(self, renderer):
-        self.renderer = renderer
-        renderer.register_before_xml_render(self._before_render_xml)
-        renderer.register_after_xml_render(self._after_render_xml)
+
+class ImageFilter(SecretaryFilterInterface):
+    '''Image filter implementation'''
 
     def render(self, value, *args, **kwargs):
         '''
@@ -28,10 +24,10 @@ class ImageFilter(object):
         }
         return placeholder_value
 
-    def _before_render_xml(self, renderer, job, xml):
+    def before_render_xml(self, renderer, job, xml):
         self.placeholders = dict()
 
-    def _after_render_xml(self, renderer, job, xml):
+    def after_render_xml(self, renderer, job, xml):
         if len(self.placeholders.keys()):
             self.replace_images(job, xml)
 
@@ -39,7 +35,7 @@ class ImageFilter(object):
 
     def replace_images(self, job, xml):
         '''
-        Replace placeholder values with final medias retrieved with callback_media.
+        Replaces placeholder values with content retrieved with callback_media.
         '''
         for draw_frame in self.draw_frames(xml):
             placeholder_value = draw_frame.getAttribute('draw:name')

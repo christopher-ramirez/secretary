@@ -2,13 +2,11 @@
     Implements Secretary's "pad" filter.
 '''
 
-class PadStringFilter():
-    '''
-    pad filter implementation.
-    '''
-    def __init__(self, renderer):
-        pass
+from base import SecretaryFilterInterface
 
+
+class PadStringFilter(SecretaryFilterInterface):
+    '''pad filter implementation.'''
     @staticmethod
     def render(value, length=5):
         value = str(value)

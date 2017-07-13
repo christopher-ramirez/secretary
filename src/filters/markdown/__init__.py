@@ -8,14 +8,10 @@ from markdown2 import markdown
 from jinja2 import Markup
 from markdown_map import transform_map
 
-class MarkdownFilter(object):
-    '''
-    markdown filter implemetation.
-    '''
-    def __init__(self, renderer):
-        self.renderer = renderer
-        renderer.register_before_xml_render(self._before_render_xml)
-        renderer.register_after_xml_render(self._after_render_xml)
+from ..base import SecretaryFilterInterface
+
+class MarkdownFilter(SecretaryFilterInterface):
+    '''markdown filter implemetation.'''
 
     def render(self, value, *args, **kwargs):
         '''
@@ -159,12 +155,12 @@ class MarkdownFilter(object):
 
         return automatic_styles[0]
 
-    def _before_render_xml(self, renderer, job, xml):
+    def before_render_xml(self, renderer, job, xml):
         self.xml = xml
         self.styles_cache = dict()
         self._create_markdown_code_style()
 
-    def _after_render_xml(self, renderer, job, xml):
+    def after_render_xml(self, renderer, job, xml):
         self.xml = None
 
     def _create_markdown_code_style(self):
