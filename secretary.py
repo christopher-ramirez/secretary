@@ -853,7 +853,7 @@ if __name__ == "__main__":
     ]
 
     render = Renderer()
-    result = render.render('simple_template2.odt', countries=countries, document=document)
+    result = render.render('simple_template.odt', countries=countries, document=document)
 
     output = open('rendered.odt', 'wb')
     output.write(result)
