@@ -10,17 +10,16 @@ __REGISTERED_FILTERS__ = {
 
 
 def register_filter(filter_name):
-    '''A decorator to registers a Secretary filter.
+    '''A decorator to register a Secretary filter.
 
-    The filter can be a python function that takes and return a value. A filter
-    implementation can also be Class implementing SecretaryFilterInterface class
-    TODO: Implement and document SecretaryFilterInterface interface.
+    The filter can be a python function that takes and returns a value.
+    A filter can also be a class whose inherits from SecretaryFilterInterface.
 
     Args:
         filter_name: Name of the filter to register.
 
     Example:
-        from secretary import register_filter
+        from secretary.filters import register_filter
 
         @register_filter('square')
         def square_number(number):
