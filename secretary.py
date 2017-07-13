@@ -177,7 +177,13 @@ class Renderer(object):
         self.log.debug('packing document')
         zip_file = io.BytesIO()
 
+        mimetype = files['mimetype']
+        del files['mimetype']
+
         zipdoc = zipfile.ZipFile(zip_file, 'a')
+
+        zipdoc.writestr('mimetype', mimetype, zipfile.ZIP_STORED)
+
         for fname, content in files.items():
             if sys.version_info >= (2, 7):
                 zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
@@ -572,6 +578,7 @@ class Renderer(object):
             if not 'result' in locals():
                 result = xml_source
             near = result.split('\n')[e.lineno -1][e.offset-200:e.offset+200]
+
             raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
                              (ErrorString(e.code), e.lineno, e.offset, near))
         except:
@@ -846,7 +853,7 @@ if __name__ == "__main__":
     ]
 
     render = Renderer()
-    result = render.render('simple_template.odt', countries=countries, document=document)
+    result = render.render('simple_template2.odt', countries=countries, document=document)
 
     output = open('rendered.odt', 'wb')
     output.write(result)
