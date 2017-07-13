@@ -33,7 +33,8 @@ def register_filter(filter_name):
 
 class RendererFilterInterface(object):
     '''
-    Provies an interface for registering filters in Renderer's environment.
+    Registers into a Renderer instance the filters previously defined by
+    the register_filter decorator.
     '''
     filters = {}
     on_job_starts_callbacks = []
