@@ -4,6 +4,7 @@ import sys
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
+
 long_description = """
 ============
 Secretary
@@ -12,6 +13,7 @@ Take the power of Jinja2 templates to OpenOffice or LibreOffice and create repor
 
 See full `documentation on Github <https://github.com/christopher-ramirez/secretary/blob/master/README.md>`_
 ."""
+
 
 class PyTest(TestCommand):
     def finalize_options(self):
@@ -24,23 +26,18 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)
 
+
+__version__ = '?'
+with open('./version', 'r') as f:
+    __version__ = f.read()
+
 setup(
-    name='secretary',
-    version='0.2.15',
+    name='Secretary',
+    version=__version__,
     url='https://github.com/christopher-ramirez/secretary',
     license='MIT',
     author='Christopher Ramírez',
     author_email='chris.ramirezg@gmail.com',
-    description='Take the power of Jinja2 templates to OpenOffice or LibreOffice.',
-    long_description=long_description,
-    py_modules=['secretary', 'markdown_map'],
-    platforms='any',
-    install_requires=[
-        'Jinja2', 'markdown2'
-    ],
-    tests_require=['pytest'],
-    cmdclass={'test': PyTest},
-    test_suite='test_secretary',
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: End Users/Desktop',
@@ -51,6 +48,18 @@ setup(
         'Topic :: Office/Business',
         'Topic :: Utilities',
     ],
+    keywords='Document engine Libreoffice OpenOffice Jinja Jinja2',
+    description='Take the power of Jinja2 templates to OpenOffice or LibreOffice.',
+    install_requires=[
+        'Jinja2', 'markdown2'
+    ],
+    python_requires='>=2.6',
+    long_description=long_description,
+    py_modules=['secretary', 'markdown_map'],
+    platforms='any',
+    tests_require=['pytest'],
+    cmdclass={'test': PyTest},
+    test_suite='test_secretary',
     extras_require={
         'testing': ['pytest']
     }
