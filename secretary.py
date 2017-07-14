@@ -180,15 +180,16 @@ class Renderer(object):
         mimetype = files['mimetype']
         del files['mimetype']
 
-        zipdoc = zipfile.ZipFile(zip_file, 'a')
+        zipdoc = zipfile.ZipFile(zip_file, 'a', zipfile.ZIP_DEFLATED)
 
-        zipdoc.writestr('mimetype', mimetype, zipfile.ZIP_STORED)
+        # Store mimetype without without compression using a ZipInfo object
+        # for compatibility with Py2.6 which doesn't have compress_type
+        # parameter in ZipFile.writestr function
+        mime_zipinfo = zipfile.ZipInfo('mimetype')
+        zipdoc.writestr(mime_zipinfo, mimetype)
 
         for fname, content in files.items():
-            if sys.version_info >= (2, 7):
-                zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
-            else:
-                zipdoc.writestr(fname, content)
+            zipdoc.writestr(fname, content)
 
         self.log.debug('Document packing completed')
 
