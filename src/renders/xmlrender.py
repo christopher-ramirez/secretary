@@ -41,7 +41,7 @@ class XMLRender(object):
         source if the autoescape feature is not enabled in current environment
         '''
         env = self.job.renderer.environment
-        if (callable(env.autoescape) and env.autoescape('.xml')) or env.autoescape:
+        if (not callable(env.autoescape)) and env.autoescape:
             return xml_source
 
         can_autoescape = False
