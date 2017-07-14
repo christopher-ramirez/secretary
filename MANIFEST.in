@@ -1,1 +1,3 @@
-include README.md LICENSE.txt simple_template.odt
+include README.md LICENSE.txt
+recursive-include examples *.fodt *.py
+include examples/images/writer.png
