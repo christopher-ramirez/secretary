@@ -18,6 +18,7 @@ def test_pad_string():
     assert pad_string('TEST', 4) == 'TEST'
     assert pad_string(1) == '00001'
 
+
 class RenderTestCase(TestCase):
     def setUp(self):
         root = os.path.dirname(__file__)
@@ -63,7 +64,6 @@ class RenderTestCase(TestCase):
         for test, expect in test_samples.items():
             assert self.engine._encode_escape_chars(test) == expect
 
-
     def _test_is_jinja_tag(self):
         assert self._is_jinja_tag('{{ foo }}')==True
         assert self._is_jinja_tag('{ foo }')==False
@@ -79,3 +79,23 @@ class RenderTestCase(TestCase):
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
 
+
+class EncodeLFAndFWithinTextNamespace(TestCase):
+    """Test encoding of line feed and tab chars within text: namespace"""
+    def test_encode_linefeed_char(self):
+        xml = '<text:span>This\nLF</text:span>'
+        espected = '<text:span>This<text:line-break/>LF</text:span>'
+        assert (Renderer._encode_escape_chars(xml) == espected)
+
+    def test_encode_tab_char(self):
+        xml = '<text:span>This\tTab</text:span>'
+        espected = '<text:span>This<text:tab/>Tab</text:span>'
+        assert (Renderer._encode_escape_chars(xml) == espected)
+
+    def test_escape_elem_with_attributes(self):
+        """A bug in _encode_escape_chars was preventing it from escaping
+        LF and tabs inside text elements with tag attributes. See:
+        https://github.com/christopher-ramirez/secretary/issues/39"""
+        xml = '<text:span attr="value">This\nLF</text:span>'
+        espected = '<text:span attr="value">This<text:line-break/>LF</text:span>'
+        assert (Renderer._encode_escape_chars(xml) == espected)

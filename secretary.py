@@ -177,12 +177,19 @@ class Renderer(object):
         self.log.debug('packing document')
         zip_file = io.BytesIO()
 
-        zipdoc = zipfile.ZipFile(zip_file, 'a')
+        mimetype = files['mimetype']
+        del files['mimetype']
+
+        zipdoc = zipfile.ZipFile(zip_file, 'a', zipfile.ZIP_DEFLATED)
+
+        # Store mimetype without without compression using a ZipInfo object
+        # for compatibility with Py2.6 which doesn't have compress_type
+        # parameter in ZipFile.writestr function
+        mime_zipinfo = zipfile.ZipInfo('mimetype')
+        zipdoc.writestr(mime_zipinfo, mimetype)
+
         for fname, content in files.items():
-            if sys.version_info >= (2, 7):
-                zipdoc.writestr(fname, content, zipfile.ZIP_DEFLATED)
-            else:
-                zipdoc.writestr(fname, content)
+            zipdoc.writestr(fname, content)
 
         self.log.debug('Document packing completed')
 
@@ -397,14 +404,32 @@ class Renderer(object):
 
     def _unescape_entities(self, xml_text):
         """
-        Unescape '&amp;', '&lt;', '&quot;' and '&gt;' within jinja instructions.
-        The regexs rules used here are compiled in _compile_escape_expressions.
+        Unescape links and '&amp;', '&lt;', '&quot;' and '&gt;' within jinja
+        instructions. The regexs rules used here are compiled in
+        _compile_escape_expressions.
         """
         for regexp, replacement in self.escape_map.items():
             while True:
                 xml_text, substitutions = regexp.subn(replacement, xml_text)
                 if not substitutions:
                     break
+
+        return self._unescape_links(xml_text)
+
+    def _unescape_links(self, xml_text):
+        """Fix Libreoffice auto escaping of xlink:href attribute values.
+        This unescaping is only done on 'secretary' scheme URLs."""
+        import urllib
+        robj = re.compile(r'(?is)(xlink:href=\")secretary:(.*?)(\")')
+
+        def replacement(match):
+            return ''.join([match.group(1), urllib.unquote(match.group(2)),
+                            match.group(3)])
+
+        while True:
+            xml_text, rep = robj.subn(replacement, xml_text)
+            if not rep:
+                break
 
         return xml_text
 
@@ -413,7 +438,11 @@ class Renderer(object):
         """
         Replace line feed and/or tabs within text:span entities.
         """
+<<<<<<< HEAD
         find_pattern = r'(?is)<text:([\S]+?)>([^>]*?([\n|\t|\r|\x0b|\x0c])[^<]*?)</text:\1>'
+=======
+        find_pattern = r'(?is)<text:([\S]+?).*?>([^>]*?([\n\t])[^<]*?)</text:\1>'
+>>>>>>> f74046fb09401facbece39056dd53dafe3f814e9
         for m in re.findall(find_pattern, xml_text):
             replacement = m[1].replace('\n', '<text:line-break/>')
             replacement = replacement.replace('\t', '<text:tab/>')
@@ -554,7 +583,10 @@ class Renderer(object):
 
             return final_xml
         except ExpatError as e:
+            if not 'result' in locals():
+                result = xml_source
             near = result.split('\n')[e.lineno -1][e.offset-200:e.offset+200]
+
             raise ExpatError('ExpatError "%s" at line %d, column %d\nNear of: "[...]%s[...]"' % \
                              (ErrorString(e.code), e.lineno, e.offset, near))
         except:
@@ -722,8 +754,20 @@ class Renderer(object):
 
                 # Transfer child nodes
                 if html_node.hasChildNodes():
+                    # We can't directly insert text into a text:list-item element.
+                    # The content of the item most be wrapped inside a container
+                    # like text:p. When there's not a double linebreak separating
+                    # list elements, markdown2 creates <li> elements without wraping
+                    # their contents inside a container. Here we automatically create
+                    # the container if one was not created by markdown2.
+                    if (tag=='li' and html_node.childNodes[0].localName != 'p'):
+                        container = xml_object.createElement('text:p')
+                        odt_node.appendChild(container)
+                    else:
+                        container = odt_node
+
                     for child_node in html_node.childNodes:
-                        odt_node.appendChild(child_node.cloneNode(True))
+                        container.appendChild(child_node.cloneNode(True))
 
                 # Add style-attributes defined in transform_map
                 if 'style_attributes' in transform_map[tag]:
