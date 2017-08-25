@@ -29,6 +29,7 @@ import re
 import sys
 import logging
 import zipfile
+import PIL.Image
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
@@ -692,7 +693,7 @@ class Renderer(object):
 
         return None
 
-    def insert_style_in_content(self, style_name, attributes=None,
+    def insert_style_in_content(self, style_name, style_family, attributes=None,
         **style_properties):
         """
             Insert a new style into content.xml's <office:automatic-styles> node.
@@ -703,15 +704,16 @@ class Renderer(object):
         style_node = self.content.createElement('style:style')
 
         style_node.setAttribute('style:name', style_name)
-        style_node.setAttribute('style:family', 'text')
-        style_node.setAttribute('style:parent-style-name', 'Standard')
+        style_node.setAttribute('style:family', style_family)
+        if 'table' not in style_family:
+            style_node.setAttribute('style:parent-style-name', 'Standard')
 
         if attributes:
             for k, v in attributes.items():
                 style_node.setAttribute('style:%s' % k, v)
 
         if style_properties:
-            style_prop = self.content.createElement('style:text-properties')
+            style_prop = self.content.createElement('style:%s-properties' % style_family)
             for k, v in style_properties.items():
                 style_prop.setAttribute('%s' % k, v)
 
@@ -735,8 +737,14 @@ class Renderer(object):
         except ImportError:
             raise SecretaryError('Could not import markdown2 library. Install it using "pip install markdown2"')
 
+        # Escape XML special characters : & < >
+        markdown_text = markdown_text.replace('<', '&lt;')
+        markdown_text = markdown_text.replace('>', '&gt;')
+        markdown_text = markdown_text.replace('&', '&amp;')
+
         styles_cache = {}   # cache styles searching
-        html_text = markdown(markdown_text)
+        html_text = markdown(markdown_text, extras=['tables'])
+
         xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
 
         # Transform HTML tags as specified in transform_map
@@ -756,7 +764,8 @@ class Renderer(object):
                     # list elements, markdown2 creates <li> elements without wraping
                     # their contents inside a container. Here we automatically create
                     # the container if one was not created by markdown2.
-                    if (tag=='li' and html_node.childNodes[0].localName != 'p'):
+                    # idem for <td> and <th>
+                    if ((tag=='li' or tag=='td' or tag=='th') and html_node.childNodes[0].localName != 'p'):
                         container = xml_object.createElement('text:p')
                         odt_node.appendChild(container)
                     else:
@@ -781,7 +790,49 @@ class Renderer(object):
                             odt_node.setAttribute('xlink:href',
                                 html_node.getAttribute('href'))
 
-                # Does the node need to create an style?
+                if tag == 'img':
+                    # Insert <draw:image> tag into the frame tag
+                    image_node = self.create_node(xml_object,
+                                                  'draw:image',
+                                                  parent=odt_node)
+                    # Set attributes of <draw:image>
+                    image_node.setAttribute('xlink:type', 'simple')
+                    image_node.setAttribute('xlink:show', 'embed')
+                    image_node.setAttribute('xlink:actuate', 'onLoad')
+                    if html_node.hasAttribute('src'):
+                        # All of the pictures are stored in the "Pictures"
+                        # archive folder (see add_media_to_archive()).
+                        # src should contain absolute or relative path to local image
+                        pic_path = html_node.getAttribute('src')
+                        if path.isfile(pic_path):
+                            # Get image name without extension if there is one
+                            image_name = path.splitext(pic_path.split('/')[-1])[0]
+
+                            # Get picture real format and compute size scale
+                            pil_pic = PIL.Image.open(pic_path)
+                            pic_mime = "image/" + pil_pic.format.lower()
+                            pic_scale = float(pil_pic.size[1]) / float(pil_pic.size[0]) # pic_scale = height / width
+
+                            # Add picture to the archive
+                            # name argument must not contain the extension
+                            pic = self.media_callback(pic_path)
+                            self.add_media_to_archive(media = pic[0],
+                                                      mime = pic_mime,
+                                                      name = image_name)
+
+                            # Add picture refenrece to the image node
+                            image_node.setAttribute('xlink:href',
+                                                    'Pictures/' + image_name + guess_extension(pic_mime))
+                            # Adjust picture scale
+                            # 10 cm for width is arbitrary. It is the only solution
+                            # I found until now to keep picture original scale
+                            # It does not seem to be possible to keep scale and have a 100% width
+                            odt_node.setAttribute('svg:width', '10.0cm')
+                            odt_node.setAttribute('svg:height', str(10.0*pic_scale)+'cm')
+                        else:
+                            self.log.debug("No image at path=%s" % pic_path)
+
+                # Does the node need to create a style?
                 if 'style' in transform_map[tag]:
                     name = transform_map[tag]['style']['name']
                     if not name in styles_cache:
@@ -790,11 +841,79 @@ class Renderer(object):
                         if style_node is None:
                             # Create and cache the style node
                             style_node = self.insert_style_in_content(
-                                name, transform_map[tag]['style'].get('attributes', None),
-                                **transform_map[tag]['style']['properties'])
+                                         name,
+                                         'text',
+                                         transform_map[tag]['style'].get('attributes', None),
+                                         **transform_map[tag]['style']['properties'])
                             styles_cache[name] = style_node
 
+
                 html_node.parentNode.replaceChild(odt_node, html_node)
+
+        # For each table:
+        #    - Add attribute style-name which the same than table:name
+        #    - manually insert table-column items in it, because it cannot
+        #      be inserted with the markdown map. To know the number of columns,
+        #      count the number of cells in the first row.
+        #    - Add the unique style of this table to the document
+        #      It cannot be written in the markdown map because the
+        #      name is unique and cannot be determined until now
+        for node in xml_object.getElementsByTagName('html')[0].childNodes:
+            if node.nodeName == 'table:table':
+                table_style_name = node.getAttribute('table:name')
+                node.setAttribute('table:style-name', table_style_name)
+                self.insert_style_in_content(
+                    table_style_name,
+                    'table',                 # family
+                    None,                    # Attributes
+                    **{'fo:margin-left':"0cm", # Properties
+                     'table:align':"margins"})
+
+                # For each column:
+                #    - add a column tag to the table
+                #      Each column has a letter in its style-name, first is 'A'
+                #      2nd is 'B', etc.
+                #    - Add the unique style of this column to the document
+                #      It cannot be written in the markdown map because the
+                #      name is unique and cannot be determined until now
+                rows = node.getElementsByTagName("table:table-row")
+                nb_of_col = len(rows[0].getElementsByTagName("table:table-cell"))
+                for col in range(nb_of_col):
+                    column_style_name = table_style_name + '.' + chr(ord('A') + col)
+                    column_node = xml_object.createElement('table:table-column')
+                    # Insert column before descriptions of rows
+                    node.insertBefore(column_node, node.childNodes[0])
+                    column_node.setAttribute('table:style-name', column_style_name)
+                    self.insert_style_in_content(
+                        column_style_name,
+                        'table-column', # family
+                        None,           # Attributes
+                        **{})           # Properties
+
+                # For each cell:
+                #     - set the unique attribute table:style-name
+                #       according to the row and the column number (A1, A2, etc.)
+                #     - Add the unique style of this cell to the document
+                #       It cannot be written in the markdown map because the
+                #       name is unique and cannot be determined until now
+                row_nb = 1
+                col_nb = 0
+                for row in rows:
+                    for cell in row.getElementsByTagName("table:table-cell"):
+                        cell_style_name = table_style_name + '.' + chr(ord('A') + col_nb) + str(row_nb)
+                        cell.setAttribute('table:style-name', cell_style_name)
+                        self.insert_style_in_content(
+                            cell_style_name,
+                            'table-cell',                       # family
+                            None,                               # Attributes
+                            **{'fo:background-color':"#ffffff", # Properties
+                             'fo:padding':"0.097cm",
+                             'fo:border':"0.05pt solid #000000"})
+                        # next cell is in next column --> increase col number
+                        col_nb += 1
+                    # Update counters at the end of a row
+                    row_nb += 1
+                    col_nb = 0
 
         def node_to_string(node):
             result = node.toxml()
@@ -807,9 +926,10 @@ class Renderer(object):
             # All double linebreak should be replaced with an empty paragraph
             return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
 
-
-        return ''.join(node_as_str for node_as_str in map(node_to_string,
+        final_result = ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
+
+        return final_result
 
     def image_filter(self, value, *args, **kwargs):
         """Store value into template_images and return the key name where this

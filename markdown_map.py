@@ -58,6 +58,13 @@ transform_map = {
 		}
 	},
 
+	'img': {
+		'replace_with': 'draw:frame',
+		'attributes': {
+			'text:anchor-type': 'as-char'
+		}
+	},
+
     'p': common_styles['p'],
     'strong': common_styles['strong'],
     'em': common_styles['italic'],
@@ -124,4 +131,40 @@ transform_map = {
     'li': {
         'replace_with': 'text:list-item'
     },
+
+    'table': {
+		'replace_with': 'table:table',
+		'attributes': {
+			'table:name': 'Table' + str(randint(100000000000000000,900000000000000000)),
+		}
+	},
+	'thead': {
+		'replace_with': 'table:table-header-rows',
+		'attributes': {
+		}
+	},
+	'tbody': {
+		'replace_with': 'table:table-rows',
+		'attributes': {
+		}
+	},
+	'tr': {
+		'replace_with': 'table:table-row',
+		'attributes': {
+		}
+	},
+	'td': {
+		'replace_with': 'table:table-cell',
+		'attributes': {
+			'table:style-name': '',
+			'office:value-type': "string"
+		}
+	},
+	'th': {
+		'replace_with': 'table:table-cell',
+		'attributes': {
+			'table:style-name': '',
+			'office:value-type': "string"
+		}
+	},
 }
