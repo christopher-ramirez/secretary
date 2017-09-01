@@ -29,12 +29,13 @@ import re
 import sys
 import logging
 import zipfile
+import jinja2
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
-from jinja2 import Environment, Undefined
+from jinja2 import Environment, Undefined, Markup
 
 try:
     if sys.version_info.major == 3:
@@ -135,7 +136,8 @@ class Renderer(object):
             self.environment = environment
         else:
             self.environment = Environment(undefined=UndefinedSilently,
-                                           autoescape=True)
+                                           autoescape=True,
+                                           finalize=self.finalize_value)
             # Register filters
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
@@ -146,6 +148,13 @@ class Renderer(object):
 
         self._compile_tags_expressions()
 
+    @jinja2.evalcontextfilter
+    def finalize_value(self, value, *args):
+        """Escapes variables values."""
+        if isinstance(value, Markup):
+            return value
+
+        return Markup(self.get_escaped_var_value(value))
 
     def media_loader(self, callback):
         """This sets the the media loader. A user defined function which
@@ -401,7 +410,6 @@ class Renderer(object):
             # Finally, remove the placeholder
             placeholder_parent.removeChild(placeholder)
 
-
     def _unescape_entities(self, xml_text):
         """
         Unescape links and '&amp;', '&lt;', '&quot;' and '&gt;' within jinja
@@ -434,17 +442,16 @@ class Renderer(object):
         return xml_text
 
     @staticmethod
-    def _encode_escape_chars(xml_text):
+    def get_escaped_var_value(value):
         """
-        Replace line feed and/or tabs within text:span entities.
+        Encodes XML reserved chars in value (eg. &, <, >) and also replaces
+        the control chars \n and \t control chars to their ODF counterparts.
         """
-        find_pattern = r'(?is)<text:([\S]+?).*?>([^>]*?([\n\t])[^<]*?)</text:\1>'
-        for m in re.findall(find_pattern, xml_text):
-            replacement = m[1].replace('\n', '<text:line-break/>')
-            replacement = replacement.replace('\t', '<text:tab/>')
-            xml_text = xml_text.replace(m[1], replacement)
-
-        return xml_text
+        value = Markup.escape(value)
+        return (
+            value.replace('\n', Markup('<text:line-break/>'))
+                 .replace('\t', Markup('<text:tab/>'))
+        )
 
 
     def add_media_to_archive(self, media, mime, name=''):
@@ -568,7 +575,6 @@ class Renderer(object):
             )
 
             result = jinja_template.render(**kwargs)
-            result = self._encode_escape_chars(result)
 
             final_xml = parseString(result.encode('ascii', 'xmlcharrefreplace'))
             if self.template_images:
