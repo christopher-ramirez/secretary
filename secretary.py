@@ -451,6 +451,8 @@ class Renderer(object):
         return (
             value.replace('\n', Markup('<text:line-break/>'))
                  .replace('\t', Markup('<text:tab/>'))
+                 .replace('\x0b', '<text:space/>')
+                 .replace('\x0c', '<text:space/>')
         )
 
 
