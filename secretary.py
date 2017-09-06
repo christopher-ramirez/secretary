@@ -142,6 +142,7 @@ class Renderer(object):
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
+            self.environment.globals['SafeValue'] = jinja2.Markup
 
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
@@ -233,7 +234,12 @@ class Renderer(object):
             self.environment.block_end_string
         ))
 
-        self.block_pattern = re.compile(r'(?is)^{0}.*{1}$'.format(
+        self.variable_pattern = re.compile(r'(?is)({0})(.*)({1})$'.format(
+            self.environment.variable_start_string,
+            self.environment.variable_end_string
+        ))
+
+        self.block_pattern = re.compile(r'(?is)({0})(.*)({1})$'.format(
             self.environment.block_start_string,
             self.environment.block_end_string
         ))
@@ -431,8 +437,12 @@ class Renderer(object):
         robj = re.compile(r'(?is)(xlink:href=\")secretary:(.*?)(\")')
 
         def replacement(match):
-            return ''.join([match.group(1), urllib.unquote(match.group(2)),
-                            match.group(3)])
+            return Markup(''.join([
+                match.group(1),
+                self.variable_pattern.sub(r'\1 SafeValue(\2) \3',
+                                          urllib.unquote(match.group(2))),
+                match.group(3)
+            ]))
 
         while True:
             xml_text, rep = robj.subn(replacement, xml_text)
