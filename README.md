@@ -159,6 +159,7 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+* **0.2.17**: Performance increase when escaping `\n` and `\t` chars. See [#44](https://github.com/christopher-ramirez/secretary/issues/44).
 * **0.2.16**: Fix store of mimetype in rendered ODT archive.
 * **0.2.15**: Fix bug reported in #39 escaping Line-Feed and Tab chars inside `text:` elements.
 * **0.2.14**: Implement dynamic links escaping and fix #33.
