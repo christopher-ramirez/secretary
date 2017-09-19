@@ -49,7 +49,6 @@ except AttributeError:
     if not isinstance(sys.version_info, tuple):
         raise
 
-
 if __PY_MAYOR_VER__ == 2:
     from urllib import unquote
 else:
