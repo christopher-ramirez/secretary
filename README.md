@@ -159,6 +159,9 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+* **0.2.18**:
+    1. Auto escaping of Secretary URL scheme was not working on Python 3.
+    2. Is not longer needed to manually set as safe the output value of the markdown filter.
 * **0.2.17**: Performance increase when escaping `\n` and `\t` chars. See [#44](https://github.com/christopher-ramirez/secretary/issues/44).
 * **0.2.16**: Fix store of mimetype in rendered ODT archive.
 * **0.2.15**: Fix bug reported in #39 escaping Line-Feed and Tab chars inside `text:` elements.
