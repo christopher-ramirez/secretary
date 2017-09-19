@@ -37,19 +37,19 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined, Markup
 
-__PY_MAYOR_VER__ = None
+__PY_MAYOR_VERSION__ = None
 try:
-    __PY_MAYOR_VER__ = sys.version_info.major
+    __PY_MAYOR_VERSION__ = sys.version_info.major
     if sys.version_info.major == 3:
         xrange = range
         basestring = (str, bytes)
 except AttributeError:
     # On Python 2.6 sys.version_info is a tuple
-    __PY_MAYOR_VER__ = 2
+    __PY_MAYOR_VERSION__ = 2
     if not isinstance(sys.version_info, tuple):
         raise
 
-if __PY_MAYOR_VER__ == 2:
+if __PY_MAYOR_VERSION__ == 2:
     from urllib import unquote
 else:
     from urllib.parse import unquote
