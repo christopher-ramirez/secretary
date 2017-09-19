@@ -37,15 +37,23 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined, Markup
 
+__PY_MAYOR_VER__ = None
 try:
+    __PY_MAYOR_VER__ = sys.version_info.major
     if sys.version_info.major == 3:
         xrange = range
         basestring = (str, bytes)
 except AttributeError:
     # On Python 2.6 sys.version_info is a tuple
+    __PY_MAYOR_VER__ = 2
     if not isinstance(sys.version_info, tuple):
         raise
 
+
+if __PY_MAYOR_VER__ == 2:
+    from urllib import unquote
+else:
+    from urllib.parse import unquote
 
 FLOW_REFERENCES = {
     'text:p'             : 'text:p',
@@ -433,14 +441,13 @@ class Renderer(object):
     def _unescape_links(self, xml_text):
         """Fix Libreoffice auto escaping of xlink:href attribute values.
         This unescaping is only done on 'secretary' scheme URLs."""
-        import urllib
         robj = re.compile(r'(?is)(xlink:href=\")secretary:(.*?)(\")')
 
         def replacement(match):
             return Markup(''.join([
                 match.group(1),
                 self.variable_pattern.sub(r'\1 SafeValue(\2) \3',
-                                          urllib.unquote(match.group(2))),
+                                          unquote(match.group(2))),
                 match.group(3)
             ]))
 
