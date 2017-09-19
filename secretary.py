@@ -829,8 +829,10 @@ class Renderer(object):
             return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
 
 
-        return ''.join(node_as_str for node_as_str in map(node_to_string,
+        ODTText = ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
+
+        return Markup(ODTText)
 
     def image_filter(self, value, *args, **kwargs):
         """Store value into template_images and return the key name where this
