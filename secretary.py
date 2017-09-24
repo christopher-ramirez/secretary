@@ -751,7 +751,7 @@ class Renderer(object):
         styles_cache = {}   # cache styles searching
         html_text = markdown(markdown_text)
         encoded = html_text.encode('ascii', 'xmlcharrefreplace')
-        if not PY2:
+        if isinstance(encoded, bytes):
             # In PY3 bytes-like object needs convert to str
             encoded = encoded.decode('ascii')
         xml_object = parseString('<html>%s</html>' % encoded)
