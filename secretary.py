@@ -37,22 +37,14 @@ from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
 from jinja2 import Environment, Undefined, Markup
 
-__PY_MAYOR_VERSION__ = None
-try:
-    __PY_MAYOR_VERSION__ = sys.version_info.major
-    if sys.version_info.major == 3:
-        xrange = range
-        basestring = (str, bytes)
-except AttributeError:
-    # On Python 2.6 sys.version_info is a tuple
-    __PY_MAYOR_VERSION__ = 2
-    if not isinstance(sys.version_info, tuple):
-        raise
+PY2 = sys.version_info < (3, 0)
 
-if __PY_MAYOR_VERSION__ == 2:
+if PY2:
     from urllib import unquote
 else:
     from urllib.parse import unquote
+    xrange = range
+    basestring = (str, bytes)
 
 FLOW_REFERENCES = {
     'text:p'             : 'text:p',
@@ -758,7 +750,11 @@ class Renderer(object):
 
         styles_cache = {}   # cache styles searching
         html_text = markdown(markdown_text)
-        xml_object = parseString('<html>%s</html>' % html_text.encode('ascii', 'xmlcharrefreplace'))
+        encoded = html_text.encode('ascii', 'xmlcharrefreplace')
+        if isinstance(encoded, bytes):
+            # In PY3 bytes-like object needs convert to str
+            encoded = encoded.decode('ascii')
+        xml_object = parseString('<html>%s</html>' % encoded)
 
         # Transform HTML tags as specified in transform_map
         # Some tags may require extra attributes in ODT.
@@ -826,7 +822,10 @@ class Renderer(object):
                 result = result.replace('\n', '<text:line-break/>')
 
             # All double linebreak should be replaced with an empty paragraph
-            return result.replace('\n\n', '<text:p text:style-name="Standard"/>')
+            # and all linebreaks should be converted to <text:line-break/>
+            return (result
+                    .replace('\n\n', '<text:p text:style-name="Standard"/>')
+                    .replace('\n', '<text:line-break/>'))
 
 
         ODTText = ''.join(node_as_str for node_as_str in map(node_to_string,
