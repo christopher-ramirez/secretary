@@ -776,6 +776,22 @@ class Renderer(object):
                     if (tag=='li' and html_node.childNodes[0].localName != 'p'):
                         container = xml_object.createElement('text:p')
                         odt_node.appendChild(container)
+                    elif tag=='code':
+                        def traverse_preformated(node):
+                            if node.hasChildNodes():
+                                for n in node.childNodes:
+                                    traverse_preformated(n)
+                            else:
+                                container = xml_object.createElement('text:span')
+                                for text in re.split('(\n)', node.nodeValue.lstrip('\n')):
+                                    if text == '\n':
+                                        container.appendChild(xml_object.createElement('text:line-break'))
+                                    else:
+                                        container.appendChild(xml_object.createTextNode(text))
+
+                                node.parentNode.replaceChild(container, node)
+                        traverse_preformated(html_node)
+                        container = odt_node
                     else:
                         container = odt_node
 
@@ -814,19 +830,7 @@ class Renderer(object):
                 html_node.parentNode.replaceChild(odt_node, html_node)
 
         def node_to_string(node):
-            result = node.toxml()
-
-            # linebreaks in preformated nodes should be converted to <text:line-break/>
-            if (node.__class__.__name__ != 'Text') and \
-                (node.getAttribute('text:style-name') == 'Preformatted_20_Text'):
-                result = result.replace('\n', '<text:line-break/>')
-
-            # All double linebreak should be replaced with an empty paragraph
-            # and all linebreaks should be converted to <text:line-break/>
-            return (result
-                    .replace('\n\n', '<text:p text:style-name="Standard"/>')
-                    .replace('\n', '<text:line-break/>'))
-
+            return node.toxml()
 
         ODTText = ''.join(node_as_str for node_as_str in map(node_to_string,
                 xml_object.getElementsByTagName('html')[0].childNodes))
