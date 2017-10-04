@@ -5,8 +5,19 @@
 '''
 
 import re
+import sys
 from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError
+from jinja2 import Markup
+
+
+PY2 = sys.version_info < (3, 0)
+
+if PY2:
+    from urllib import unquote
+else:
+    from urllib.parse import unquote
+
 
 class JinjaTagsUtils(object):
     '''
@@ -87,19 +98,23 @@ class JinjaTagsUtils(object):
         Fix Libreoffice auto escaping of xlink:href attribute values.
         This unescaping is only done on 'secretary' scheme URLs.
         '''
-        import urllib
         robj = re.compile(r'(?is)(xlink:href=\")secretary:(.*?)(\")')
 
-        def _replacement(match):
-            return ''.join([match.group(1), urllib.unquote(match.group(2)),
-                            match.group(3)])
+        def replacement(match):
+            return Markup(''.join([
+                match.group(1),
+                self.variable_pattern.sub(r'\1 SafeValue(\2) \3',
+                                          unquote(match.group(2))),
+                match.group(3)
+            ]))
 
         while True:
-            xml_text, rep = robj.subn(_replacement, xml_text)
+            xml_text, rep = robj.subn(replacement, xml_text)
             if not rep:
                 break
 
         return xml_text
+
 
 class RenderJob(object):
     '''

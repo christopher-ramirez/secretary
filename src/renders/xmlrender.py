@@ -32,7 +32,7 @@ class XMLRender(object):
         template = self.autoescape_for_xml(template)
 
         template_object = self.job.renderer.environment.from_string(template)
-        result = self.encode_feed_chars(template_object.render(**kwargs))
+        result = template_object.render(**kwargs)
         return result
 
     def autoescape_for_xml(self, xml_source):
@@ -212,17 +212,3 @@ class XMLRender(object):
         span_content = self.create_text_node(content)
         span_elem.appendChild(span_content)
         return span_elem
-
-    @staticmethod
-    def encode_feed_chars(xml_text):
-        '''
-        Replace line feed and/or tabs within text:span entities.
-        '''
-        find_pattern = r'(?is)<text:([\S]+?).*?>([^>]*?([\n\t])[^<]*?)</text:\1>'
-        for m in re.finditer(find_pattern, xml_text):
-            content = m.group(0)
-            replacement = content.replace('\n', '<text:line-break/>')
-            replacement = replacement.replace('\t', '<text:tab/>')
-            xml_text = xml_text.replace(content, replacement)
-
-        return xml_text

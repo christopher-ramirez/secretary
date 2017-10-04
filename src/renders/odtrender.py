@@ -74,7 +74,14 @@ class ODTRender(RenderJob):
     def _pack(self):
         # Packs and return this Job ODT archive
         output_stream = BytesIO()
-        zip_file = zipfile.ZipFile(output_stream, 'a')
+        zip_file = zipfile.ZipFile(output_stream, 'a', zipfile.ZIP_DEFLATED)
+
+        # We should store the mimetype file without compression.
+        mimetype_file = self.files['mimetype']
+        del self.files['mimetype']
+        zinfo = zipfile.ZipInfo('mimetype')
+        zip_file.writestr(zinfo, mimetype_file)
+
         for name, content in self.files.items():
             # exclude manifest, it will be added at the end
             if name == 'META-INF/manifest.xml':
@@ -86,7 +93,8 @@ class ODTRender(RenderJob):
                 zip_file.writestr(name, content)
 
         # Finally, write manifest version kept by this class
-        zip_file.writestr('META-INF/manifest.xml', self.manifest.toxml().encode('ascii'))
+        zip_file.writestr('META-INF/manifest.xml',
+                          self.manifest.toxml().encode('ascii'))
 
         return output_stream
 

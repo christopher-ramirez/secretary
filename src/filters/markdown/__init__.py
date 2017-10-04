@@ -2,6 +2,7 @@
     Implements Secretary's "markdown" filter.
 '''
 
+import re
 from xml.dom import Node
 from xml.dom.minidom import parseString
 from markdown2 import markdown
@@ -70,6 +71,22 @@ class MarkdownFilter(SecretaryFilterInterface):
             if tag.localName == 'li' and tag.childNodes[0].localName != 'p':
                 container = html.createElement('text:p')
                 odt_tag.appendChild(container)
+            elif tag.localName == 'code':
+                def traverse_preformated(node):
+                    if node.hasChildNodes():
+                        for n in node.childNodes:
+                            traverse_preformated(n)
+                    else:
+                        container = html.createElement('text:span')
+                        for text in re.split('(\n)', node.nodeValue.lstrip('\n')):
+                            if text == '\n':
+                                container.appendChild(html.createElement('text:line-break'))
+                            else:
+                                container.appendChild(html.createTextNode(text))
+
+                        node.parentNode.replaceChild(container, node)
+                traverse_preformated(tag)
+                container = odt_tag
             else:
                 container = odt_tag
 

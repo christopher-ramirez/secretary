@@ -27,7 +27,7 @@ import zipfile
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
-from jinja2 import Environment, Undefined
+from jinja2 import Environment, Undefined, Markup, evalcontextfilter
 
 from filters import RendererFilterInterface
 from renders.odtrender import ODTRender, FlatODTRender
@@ -148,10 +148,52 @@ class Renderer(RendererFilterInterface, MediaInterface):
                          create a new environment for this class instance.
         '''
         self.log = logging.getLogger(__name__)
-        self.environment = environment or Environment(
-            undefined=UndefinedSilently, autoescape=True)
+
+        self.environment = environment or self.build_environment()
 
         super(Renderer, self).__init__(**kwargs)
+
+
+    def build_environment(self):
+        '''
+        Builds and returns a new Jinja2 Environment instance suitable
+        for use with Secretary.
+        '''
+        environment = Environment(
+            undefined=UndefinedSilently,
+            autoescape=True,
+            finalize=self.finalize_value
+        )
+
+        # Setup some globals
+        environment.globals['SafeValue'] = Markup
+
+        return environment
+
+
+    @evalcontextfilter
+    def finalize_value(self, value, *args):
+        """Escapes variables values."""
+        if isinstance(value, Markup):
+            return value
+
+        return Markup(self.get_escaped_var_value(value))
+
+
+    @staticmethod
+    def get_escaped_var_value(value):
+        """
+        Encodes XML reserved chars in value (&, <, >) and also replaces
+        the control chars \n and \t control chars to their ODF counterparts.
+        """
+        value = Markup.escape(value)
+        return (
+            value.replace('\n', Markup('<text:line-break/>'))
+                 .replace('\t', Markup('<text:tab/>'))
+                 .replace('\x0b', '<text:space/>')
+                 .replace('\x0c', '<text:space/>')
+        )
+
 
     def render(self, template, **kwargs):
         '''

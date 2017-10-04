@@ -126,4 +126,8 @@ transform_map = {
     'li': {
         'replace_with': 'text:list-item'
     },
-}
+
+    'br': {
+        'replace_with': 'text:line-break'
+    },
+ }
