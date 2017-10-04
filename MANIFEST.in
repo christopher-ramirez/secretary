@@ -1,3 +1,5 @@
-include README.md LICENSE.txt
-recursive-include examples *.fodt *.py
-include examples/images/writer.png
+include README.md LICENSE.txt version
+recursive-include samples *.fodt *.py
+recursive-exclude secretary *.pyc
+recursive-exclude secretary *pyo
+include samples/images/writer.png

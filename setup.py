@@ -50,12 +50,10 @@ setup(
     ],
     keywords='Document engine Libreoffice OpenOffice Jinja Jinja2',
     description='Take the power of Jinja2 templates to OpenOffice or LibreOffice.',
-    install_requires=[
-        'Jinja2', 'markdown2'
-    ],
+    install_requires=['jinja2', 'markdown2'],
     python_requires='>=2.6',
     long_description=long_description,
-    py_modules=['secretary', 'markdown_map'],
+    packages=['secretary'],
     platforms='any',
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
