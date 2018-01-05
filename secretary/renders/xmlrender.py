@@ -12,7 +12,7 @@
 
 import re
 import jinja2
-from base import JinjaTagsUtils
+from .base import JinjaTagsUtils
 
 class XMLRender(object):
     '''

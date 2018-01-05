@@ -3,7 +3,7 @@
 '''
 
 from uuid import uuid4
-from base import SecretaryFilterInterface
+from .base import SecretaryFilterInterface
 
 
 class ImageFilter(SecretaryFilterInterface):
@@ -54,8 +54,8 @@ class ImageFilter(SecretaryFilterInterface):
             )
 
             # update draw_frame and image_frame if they were updated in media_callback
-            map(lambda (k, v): draw_frame.setAttribute(k, v), frame_attrs.items())
-            map(lambda (k, v): draw_image.setAttribute(k, v), image_attrs.items())
+            map(lambda k, v: draw_frame.setAttribute(k, v), frame_attrs.items())
+            map(lambda k, v: draw_image.setAttribute(k, v), image_attrs.items())
 
             # TODO: Decide if to keep original `value` string.
 

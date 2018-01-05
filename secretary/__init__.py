@@ -29,8 +29,8 @@ from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from jinja2 import Environment, Undefined, Markup, evalcontextfilter
 
-from filters import RendererFilterInterface
-from renders.odtrender import ODTRender, FlatODTRender
+from .filters import RendererFilterInterface
+from .renders.odtrender import ODTRender, FlatODTRender
 
 try:
     if sys.version_info.major == 3:

@@ -1,6 +1,6 @@
-from padstring import PadStringFilter
-from image import ImageFilter
-from markdown import MarkdownFilter
+from .padstring import PadStringFilter
+from .image import ImageFilter
+from .markdown import MarkdownFilter
 
 __REGISTERED_FILTERS__ = {
     'pad': PadStringFilter,
@@ -46,7 +46,7 @@ class RendererFilterInterface(object):
         super(RendererFilterInterface, self).__init__(*args, **kwargs)
 
         # Register filters previously added to __REGISTERED_FILTERS__
-        map(lambda (f, i): self.register_filter(f, i),
+        map(lambda f, i: self.register_filter(f, i),
             __REGISTERED_FILTERS__.items())
 
     def register_filter(self, filtername, filter_imp):

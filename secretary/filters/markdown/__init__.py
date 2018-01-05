@@ -7,7 +7,7 @@ from xml.dom import Node
 from xml.dom.minidom import parseString
 from markdown2 import markdown
 from jinja2 import Markup
-from markdown_map import transform_map
+from .markdown_map import transform_map
 
 from ..base import SecretaryFilterInterface
 
@@ -21,7 +21,7 @@ class MarkdownFilter(SecretaryFilterInterface):
         html_object = self.markdown_to_html(value)
 
         # Transform every known HTML tags to odt
-        map(lambda (k, v): self.transform_html_tags_to_odt(html_object, k, v),
+        map(lambda k, v: self.transform_html_tags_to_odt(html_object, k, v),
             transform_map.items())
 
         def _node_to_str(node):
@@ -96,11 +96,11 @@ class MarkdownFilter(SecretaryFilterInterface):
 
         # Now tranform tag attributes
         if 'style_attributes' in transform:
-            map(lambda (attr, value): odt_tag.setAttribute('text:{}'.format(attr), value),
+            map(lambda attr, value: odt_tag.setAttribute('text:{}'.format(attr), value),
                 transform['style_attributes'].items())
 
         if 'attributes' in transform:
-            map(lambda (attr, value): odt_tag.setAttribute(attr, value),
+            map(lambda attr, value: odt_tag.setAttribute(attr, value),
                 transform['attributes'].items())
 
             # Special handling of <a> tags and their href attribute
@@ -148,12 +148,12 @@ class MarkdownFilter(SecretaryFilterInterface):
         style.setAttribute('style:family', 'text')
         style.setAttribute('style:parent-style-name', 'Standard')
 
-        map(lambda (attr, val): style.setAttribute('style:{}'.format(attr), val),
+        map(lambda attr, val: style.setAttribute('style:{}'.format(attr), val),
             attrs.items())
 
         if props:
             style_props = self.xml.createElement('style:text-properties')
-            map(lambda (attr, val): style_props.setAttribute(attr, val), props.items())
+            map(lambda attr, val: style_props.setAttribute(attr, val), props.items())
             style.appendChild(style_props)
 
         return auto_styles.appendChild(style)

@@ -2,7 +2,7 @@
     Implements Secretary's "pad" filter.
 '''
 
-from base import SecretaryFilterInterface
+from .base import SecretaryFilterInterface
 
 
 class PadStringFilter(SecretaryFilterInterface):

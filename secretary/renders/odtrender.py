@@ -7,7 +7,7 @@ from os import path
 from xml.dom.minidom import parseString
 from mimetypes import guess_type, guess_extension
 
-from base import RenderJob
+from .base import RenderJob
 
 class ODTRender(RenderJob):
     archive = None

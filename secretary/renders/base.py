@@ -161,7 +161,7 @@ class RenderJob(object):
         Render an ODT XML document. A Job may call this function multiple
         times. Depending of the number of XMLs that are part of the document.
         '''
-        from xmlrender import XMLRender
+        from .xmlrender import XMLRender
 
         xml = parseString(xml)
         self._before_render_xml(xml)
