@@ -54,8 +54,8 @@ class ImageFilter(SecretaryFilterInterface):
             )
 
             # update draw_frame and image_frame if they were updated in media_callback
-            map(lambda k, v: draw_frame.setAttribute(k, v), frame_attrs.items())
-            map(lambda k, v: draw_image.setAttribute(k, v), image_attrs.items())
+            map(lambda p: draw_frame.setAttribute(*p), frame_attrs.items())
+            map(lambda p: draw_image.setAttribute(*p), image_attrs.items())
 
             # TODO: Decide if to keep original `value` string.
 
