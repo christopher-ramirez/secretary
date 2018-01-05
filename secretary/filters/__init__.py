@@ -42,12 +42,10 @@ class RendererFilterInterface(object):
     before_xml_render_callbacks = []
     after_xml_render_callbacks = []
 
-    def __init__(self, *args, **kwargs):
-        super(RendererFilterInterface, self).__init__(*args, **kwargs)
-
+    def __init__(self):
         # Register filters previously added to __REGISTERED_FILTERS__
-        map(lambda f: self.register_filter(*f),
-            __REGISTERED_FILTERS__.items())
+        for name, implementation in __REGISTERED_FILTERS__.items():
+            self.register_filter(name, implementation)
 
     def register_filter(self, filtername, filter_imp):
         '''Registers a secretary filter.'''

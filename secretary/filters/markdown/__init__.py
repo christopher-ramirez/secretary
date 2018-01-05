@@ -21,8 +21,8 @@ class MarkdownFilter(SecretaryFilterInterface):
         html_object = self.markdown_to_html(value)
 
         # Transform every known HTML tags to odt
-        map(lambda p: self.transform_html_tags_to_odt(html_object, *p),
-            transform_map.items())
+        for tagname, transform in transform_map.items():
+            self.transform_html_tags_to_odt(html_object, tagname, transform)
 
         def _node_to_str(node):
             result = node.toxml()
@@ -53,7 +53,8 @@ class MarkdownFilter(SecretaryFilterInterface):
         '''Transform all tags of a kind in html into the corresponging ODT tag.
         How the tags are tranformed is defined in transform_prop param.'''
         html_tags = html.getElementsByTagName(tag_name)
-        map(lambda t: self.html_tag_to_odt(html, t, transform_props), html_tags)
+        for tag in html_tags:
+            self.html_tag_to_odt(html, tag, transform_props)
 
     def html_tag_to_odt(self, html, tag, transform):
         '''
@@ -91,17 +92,17 @@ class MarkdownFilter(SecretaryFilterInterface):
                 container = odt_tag
 
             # Insert html tag content (actually a group of child nodes)
-            map(lambda child: container.appendChild(child.cloneNode(True)),
-                tag.childNodes)
+            for child in tag.childNodes:
+                container.appendChild(child.cloneNode(True))
 
         # Now tranform tag attributes
         if 'style_attributes' in transform:
-            map(lambda p: odt_tag.setAttribute('text:{}'.format(p[0]), p[1]),
-                transform['style_attributes'].items())
+            for style, attrs in transform['style_attributes'].items():
+                odt_tag.setAttribute('text:{}'.format(style), attrs)
 
         if 'attributes' in transform:
-            map(lambda p: odt_tag.setAttribute(p[0], p[1]),
-                transform['attributes'].items())
+            for name, value in transform['attributes'].items():
+                odt_tag.setAttribute(name, value)
 
             # Special handling of <a> tags and their href attribute
             if tag.localName == 'a' and tag.hasAttribute('href'):
@@ -148,12 +149,14 @@ class MarkdownFilter(SecretaryFilterInterface):
         style.setAttribute('style:family', 'text')
         style.setAttribute('style:parent-style-name', 'Standard')
 
-        map(lambda p: style.setAttribute('style:{}'.format(p[0]), p[1]),
-            attrs.items())
+        for name, value in attrs.items():
+            style.setAttribute('style:{}'.format(name), value)
 
         if props:
             style_props = self.xml.createElement('style:text-properties')
-            map(lambda p: style_props.setAttribute(p[0], p[1]), props.items())
+            for prop, value in props.items():
+                style_props.setAttribute(prop, value)
+
             style.appendChild(style_props)
 
         return auto_styles.appendChild(style)
@@ -196,8 +199,8 @@ class MarkdownFilter(SecretaryFilterInterface):
             'style:font-pitch': ''
         }
 
-        map(lambda k: style_props.update(**{k: text_props.getAttribute(k)}),
-            style_props.keys())
+        for style in style_props.keys():
+            style_props.update(**{style: text_props.getAttribute(style)})
 
         self.insert_style_in_automatic_styles('markdown_code', {}, **style_props)
         self.styles_cache['markdown_code'] = True

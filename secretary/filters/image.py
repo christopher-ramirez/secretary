@@ -54,8 +54,11 @@ class ImageFilter(SecretaryFilterInterface):
             )
 
             # update draw_frame and image_frame if they were updated in media_callback
-            map(lambda p: draw_frame.setAttribute(*p), frame_attrs.items())
-            map(lambda p: draw_image.setAttribute(*p), image_attrs.items())
+            for name, value in frame_attrs.items():
+                draw_frame.setAttribute(name, value)
+
+            for name, value in image_attrs.items():
+                draw_image.setAttribute(name, value)
 
             # TODO: Decide if to keep original `value` string.
 
@@ -72,14 +75,16 @@ class ImageFilter(SecretaryFilterInterface):
         "draw:image" node (child of draw:frame).
         '''
         frame_attrs = dict()
-        map(lambda a: frame_attrs.update({a.name: a.value}),
-            [draw_frame.attributes.item(i) for i in xrange(draw_frame.attributes.length)])
+        for attr_index in range(draw_frame.attributes.length):
+            attr = draw_frame.attributes.item(attr_index)
+            frame_attrs.update({attr.name: attr.value})
 
         # Extract draw:image attributes
         draw_image = draw_frame.childNodes[0]
         image_attrs = dict()
-        map(lambda a: image_attrs.update({a.name: a.value}),
-            [draw_image.attributes.item(i) for i in xrange(draw_image.attributes.length)])
+        for attr_index in range(draw_image.attributes.length):
+            attr = draw_image.attributes.item(attr_index)
+            image_attrs.update({attr.name: attr.value})
 
         return (frame_attrs, image_attrs)
 

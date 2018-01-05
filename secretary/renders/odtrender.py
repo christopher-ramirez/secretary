@@ -19,8 +19,8 @@ class ODTRender(RenderJob):
         self.manifest = parseString(self.archive.read('META-INF/manifest.xml'))
 
         # render all *.xml files that can be found inside the archive
-        map(lambda zip_file: self.render_archive_xml(zip_file),
-            filter(lambda f: f.endswith('.xml'), self.files.keys()))
+        for zfile in filter(lambda f: f.endswith('.xml'), self.files.keys()):
+            self.render_archive_xml(zfile)
 
         self._after_job_end()
         return self._pack().getvalue()
@@ -113,7 +113,9 @@ class FlatODTRender(RenderJob):
 
     def add_document_media(self, reference_node, media, **kwargs):
         xml = kwargs.pop('xml')
-        base64_content = xml.createTextNode(base64.encodestring(media.read(-1)))
+        base64_content = xml.createTextNode(
+            base64.encodestring(media.read(-1)).decode('utf-8')
+        )
         base64_node = xml.createElement('office:binary-data')
         base64_node.appendChild(base64_content)
 

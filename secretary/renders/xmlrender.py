@@ -101,7 +101,7 @@ class XMLRender(object):
         '''
 
         self._census_tags()
-        map(self._prepare_tag, self.tags_in_document())
+        list(map(self._prepare_tag, self.tags_in_document()))
 
     def _census_tags(self):
         for tag in self.tags_in_document():
@@ -144,7 +144,7 @@ class XMLRender(object):
         XMLRender.count_node_decendant_tags(node.parentNode, is_block_tag)
 
     def _prepare_tag(self, tag):
-        from constants import FLOW_REFERENCES
+        from .constants import FLOW_REFERENCES
         # We have to replace a node, let's call it "placeholder", with the
         # content of our jinja tag. The placeholder can be a node with all its
         # children. Node's "text:description" attribute indicates how far we
