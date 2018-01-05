@@ -8,6 +8,7 @@
 .tox
 .cache
 .vscode
+output.fodt
 dist
 build
 eggs
