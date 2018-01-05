@@ -53,7 +53,10 @@ setup(
     install_requires=['jinja2', 'markdown2'],
     python_requires='>=2.6',
     long_description=long_description,
-    packages=['secretary'],
+    packages=[
+        'secretary', 'secretary.renders', 'secretary.filters',
+        'secretary.filters.markdown'
+    ],
     platforms='any',
     tests_require=['pytest'],
     cmdclass={'test': PyTest},

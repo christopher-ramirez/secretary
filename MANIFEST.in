@@ -1,5 +1,6 @@
 include README.md LICENSE.txt version
 recursive-include samples *.fodt *.py
+recursive-exclude samples output.fodt
 recursive-exclude secretary *.pyc
 recursive-exclude secretary *pyo
 include samples/images/writer.png
