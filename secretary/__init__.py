@@ -150,9 +150,8 @@ class Renderer(RendererFilterInterface, MediaInterface):
         self.log = logging.getLogger(__name__)
 
         self.environment = environment or self.build_environment()
-
-        super(Renderer, self).__init__(**kwargs)
-
+        MediaInterface.__init__(self)
+        RendererFilterInterface.__init__(self)
 
     def build_environment(self):
         '''
