@@ -3,7 +3,7 @@
 *.*~
 *.egg
 *.egg-info
-*.odt
+/*.odt
 *.txt
 .tox
 .cache
