@@ -6,60 +6,53 @@ from secretary.renders.base import RenderJob
 from secretary.renders.xmlrender import XMLRender
 
 SAMPLE_XML = """<?xml version="1.0" encoding="UTF-8"?>
-<note>
-  {% for name in names %}
-  <to>{{ name }}</to>
-  {% endfor %}
-</note>
+<body xmlns:text="http://localhost/"
+        text:text-input="http://localhost/">
+    <table>
+        <row>
+            <text:text-input>{% for name in names %}</text:text-input>
+        </row>
+        <paragraph>
+            <text:text-input>{{ name }}</text:text-input>
+        </paragraph>
+        <row>
+            <text:text-input>{% endfor %}</text:text-input>
+        </row>
+    </table>
+</body>
 """
 
 # Init environment and disable autoescape for testing some parts of the code
-env = Environment()
+env = Environment(extensions=['jinja2.ext.AutoEscapeExtension'])
 env.autoescape = False
 
 class XMLRenderTestCase(TestCase):
     def setUp(self):
         self.render = Renderer(env)
-        self.job = RenderJob(self.render, SAMPLE_XML)
-        self.xmlrenderer = XMLRender(self.job, SAMPLE_XML)
+        self.job = RenderJob(self.render, None)
 
     def test_autoescape(self):
-        final = ''.join([
+        xml_renderer = XMLRender(self.job, SAMPLE_XML)
+        expected = ''.join([
             '{% autoescape true %}', SAMPLE_XML, '{% endautoescape %}'])
-        self.assertEqual(self.xmlrenderer.autoescape_for_xml(SAMPLE_XML), final)
+        self.assertEqual(
+            xml_renderer.autoescape_for_xml(SAMPLE_XML), expected)
 
     def test_prepare_tags(self):
-        xml = """<?xml version="1.0" encoding="UTF-8"?>
-        <body xmlns:text="http://localhost/"
-              text:text-input="http://localhost/">
-            <table>
-              <row>
-                  <text:text-input>{% for bar in bars %}</text:text-input>
-              </row>
-              <paragraph>
-                  <text:text-input>{{ bar }}</text:text-input>
-              </paragraph>
-              <row>
-                  <text:text-input>{% endfor %}</text:text-input>
-              </row>
-            </table>
-        </body>
-        """
-        template = parseString(xml)
-        render = XMLRender(self.job, template)
-        render.prepare_tags()
+        template = parseString(SAMPLE_XML)
+        renderer = XMLRender(self.job, template)
+        renderer.prepare_tags()
 
-        fixedXml = template.toxml()
-        self.assertNotIn('<text:text-input>{% for bar in bars %}', fixedXml)
-        self.assertIn('{% for bar in bars %}\n', fixedXml)
-        self.assertNotIn('<text:text-input>{% endfor %}', fixedXml)
-        self.assertIn('{% endfor %}\n', fixedXml)
-        self.assertIn('<text:span>{{ bar }}</text:span>', fixedXml)
+        out = template.toxml()
+        self.assertNotIn('<text:text-input>{% for name in names %}', out)
+        self.assertIn('{% for name in names %}\n', out)
+        self.assertNotIn('<text:text-input>{{ name }}</text:text-input>', out)
+        self.assertIn('{% endfor %}\n', out)
+        self.assertIn('<text:span>{{ name }}</text:span>', out)
 
     def test_render(self):
-        template = parseString(SAMPLE_XML)
-        job = XMLRender(self.job, template)
-        results = job.render(names=['Chris', 'Michael'])
-        self.assertIn('<to>Chris</to>', results)
-        self.assertIn('<to>Michael</to>', results)
+        xml_renderer = XMLRender(self.job, parseString(SAMPLE_XML))
+        results = xml_renderer.render(names=['Chris', 'Michael'])
+        self.assertIn('<text:span>Chris</text:span>', results)
+        self.assertIn('<text:span>Michael</text:span>', results)
 
