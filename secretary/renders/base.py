@@ -40,6 +40,11 @@ class JinjaTagsUtils(object):
             self.environment.block_end_string
         ))
 
+        self.variable_pattern = re.compile(r'(?is)({0})(.*)({1})$'.format(
+            self.environment.variable_start_string,
+            self.environment.variable_end_string
+        ))
+
         self.block_pattern = re.compile(r'(?is)^{0}.*{1}$'.format(
             self.environment.block_start_string,
             self.environment.block_end_string
@@ -52,7 +57,7 @@ class JinjaTagsUtils(object):
             r'&lt;': r'<',
             r'&amp;': r'&',
             r'&quot;': r'"',
-            r'&apos;': r'\'',
+            r'&apos;': r"'",
         }
 
         for key, value in unescape_rules.items():
