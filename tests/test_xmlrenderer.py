@@ -30,7 +30,8 @@ class XMLRenderTestCase(TestCase):
 
     def test_prepare_tags(self):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
-<body xmlns:text="http://localhost/" text:text-input="http://localhost/">
+        <body xmlns:text="http://localhost/"
+              text:text-input="http://localhost/">
             <table>
               <row>
                   <text:text-input>{% for bar in bars %}</text:text-input>
