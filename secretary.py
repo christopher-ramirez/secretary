@@ -690,7 +690,7 @@ class Renderer(object):
             Search in <office:automatic-styles> for style_name.
             Return None if style_name is not found. Otherwise
             return the style node
-        """
+        """ 
 
         auto_styles = self.content.getElementsByTagName(
             'office:automatic-styles')[0]
@@ -705,8 +705,7 @@ class Renderer(object):
 
         return None
 
-    def insert_style_in_content(self, style_name, attributes=None,
-        **style_properties):
+    def insert_style_in_content(self, style_name, attributes=None, node_type="text-properties", **style_properties):
         """
             Insert a new style into content.xml's <office:automatic-styles> node.
             Returns a reference to the newly created node
@@ -724,7 +723,7 @@ class Renderer(object):
                 style_node.setAttribute('style:%s' % k, v)
 
         if style_properties:
-            style_prop = self.content.createElement('style:text-properties')
+            style_prop = self.content.createElement('style:%s' % node_type)
             for k, v in style_properties.items():
                 style_prop.setAttribute('%s' % k, v)
 
