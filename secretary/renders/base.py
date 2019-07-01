@@ -167,15 +167,13 @@ class RenderJob(object):
         times. Depending of the number of XMLs that are part of the document.
         '''
         from .xmlrender import XMLRender
-
         xml = parseString(xml)
         self._before_render_xml(xml)
         render_job = XMLRender(self, xml)
         rendered_xml_string = render_job.render(**self.variables)
-        rendered_xml_string = rendered_xml_string.encode('utf-8')
 
         try:
-            final_xml = parseString(rendered_xml_string)
+            final_xml = parseString(rendered_xml_string.encode('utf-8'))
             self._after_render_xml(final_xml)
         except ExpatError as e:
             N_CONTEXT_CHARS = 38
@@ -187,7 +185,7 @@ class RenderJob(object):
                 e.lineno, e.offset, context, '-' * (e.offset - lower) + '^'),)
             raise
 
-        return final_xml.toxml().encode('ascii', 'xmlcharrefreplace')
+        return final_xml.toxml().encode('utf-8')
 
     def _before_render_xml(self, xml):
         self.renderer.notify_xml_render_start(self, xml)
