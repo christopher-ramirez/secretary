@@ -28,15 +28,8 @@ env.autoescape = False
 
 class XMLRenderTestCase(TestCase):
     def setUp(self):
-        self.render = Renderer(env)
+        self.render = Renderer()
         self.job = RenderJob(self.render, None)
-
-    def test_autoescape(self):
-        xml_renderer = XMLRender(self.job, SAMPLE_XML)
-        expected = ''.join([
-            '{% autoescape true %}', SAMPLE_XML, '{% endautoescape %}'])
-        self.assertEqual(
-            xml_renderer.autoescape_for_xml(SAMPLE_XML), expected)
 
     def test_prepare_tags(self):
         template = parseString(SAMPLE_XML)
@@ -48,11 +41,18 @@ class XMLRenderTestCase(TestCase):
         self.assertIn('{% for name in names %}\n', out)
         self.assertNotIn('<text:text-input>{{ name }}</text:text-input>', out)
         self.assertIn('{% endfor %}\n', out)
-        self.assertIn('<text:span>{{ name }}</text:span>', out)
+        self.assertIn('<text:span>{{SEXMLOutput( name )}}</text:span>', out)
 
     def test_render(self):
         xml_renderer = XMLRender(self.job, parseString(SAMPLE_XML))
         results = xml_renderer.render(names=['Chris', 'Michael'])
         self.assertIn('<text:span>Chris</text:span>', results)
         self.assertIn('<text:span>Michael</text:span>', results)
+
+    def test_unicode_escape(self):
+        xml_renderer = XMLRender(self.job, parseString(SAMPLE_XML))
+        results = xml_renderer.render(names=[u'\xc1\xdc\xd1', '1 < 2', 10])
+        self.assertIn('<text:span>&#193;&#220;&#209;</text:span>', results)
+        self.assertIn('<text:span>1 &lt; 2</text:span>', results)
+        self.assertIn('<text:span>10</text:span>', results)
 
