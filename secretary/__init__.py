@@ -21,26 +21,28 @@ from __future__ import unicode_literals, print_function
 
 import io
 import re
-import sys
 import logging
 import zipfile
 from os import path
 from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from jinja2 import Environment, Undefined, Markup, evalcontextfilter
+from markupsafe import PY2, text_type
 
 from .filters import RendererFilterInterface
 from .renders.odtrender import ODTRender, FlatODTRender
 
-try:
-    if sys.version_info.major == 3:
-        xrange = range
-        basestring = (str, bytes)
-except AttributeError:
-    # On Python 2.6 sys.version_info is a tuple
-    if not isinstance(sys.version_info, tuple):
-        raise
+if not PY2:
+    xrange = range
+    basestring = (str, bytes)
 
+class SEXMLOutput(text_type):
+   def __new__(cls, content=u'', encoding=None, errors='strict'):
+        if not isinstance(content, basestring):
+            return content
+
+        escaped = Markup.escape(content).encode('ascii', 'xmlcharrefreplace')
+        return Markup(escaped)
 
 class SecretaryError(Exception):
     pass
@@ -166,6 +168,7 @@ class Renderer(RendererFilterInterface, MediaInterface):
 
         # Setup some globals
         environment.globals['SafeValue'] = Markup
+        environment.globals['SEXMLOutput'] = SEXMLOutput
 
         return environment
 

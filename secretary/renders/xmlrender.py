@@ -29,35 +29,9 @@ class XMLRender(object):
         '''
         self.prepare_tags()
         template = self.tags.unescape_entities(self.document.toxml())
-        template = self.autoescape_for_xml(template)
-
         template_object = self.job.renderer.environment.from_string(template)
         result = template_object.render(**kwargs)
         return result
-
-    def autoescape_for_xml(self, xml_source):
-        '''
-        Returns a version of xml_source with autoescape activated for the whole
-        source if the autoescape feature is not enabled in current environment
-        '''
-        env = self.job.renderer.environment
-        if (not callable(env.autoescape)) and env.autoescape:
-            return xml_source
-
-        can_autoescape = False
-        jinja_int_ver = int(''.join(jinja2.__version__.split('.'))[:2])
-        if jinja_int_ver >= 29:
-            can_autoescape = True
-        else:
-            can_autoescape = ('jinja2.ext.AutoEscapeExtension' in env.extensions)
-
-        if can_autoescape:
-            return '{0} autoescape true {1}{xml}{0} endautoescape {1}'.format(
-                self.tags.block_start_string, self.tags.block_end_string,
-                xml=xml_source
-            )
-
-        return xml_source
 
     def prepare_tags(self):
         '''
@@ -170,7 +144,7 @@ class XMLRender(object):
                 final_node = self.create_text_node(content)
         else:
             # Default handling for vars tags or misconfigured block tags
-            final_node = self.create_span_node(content)
+            final_node = self.make_print_element(content)
 
         input_parent = input_node.parentNode
         if not take_upto.startswith('after::'):
@@ -207,8 +181,10 @@ class XMLRender(object):
     def create_text_node(self, text):
         return self.document.createTextNode(text)
 
-    def create_span_node(self, content):
+    def make_print_element(self, content):
         span_elem = self.document.createElement('text:span')
-        span_content = self.create_text_node(content)
+        escaped = self.tags.variable_pattern.sub(
+            r'\1SEXMLOutput(\2)\3', content)
+        span_content = self.create_text_node(escaped)
         span_elem.appendChild(span_content)
         return span_elem
