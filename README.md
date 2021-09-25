@@ -159,6 +159,7 @@ Pad zeroes to `value` to the left until output value's length be equal to `lengt
 Secretary supports most of the jinja2 control structure/flow tags. But please avoid using the following tags since they are not supported: `block`, `extends`, `macro`, `call`, `include` and `import`.
 
 ### Version History
+* **0.3.0**: Make library compatible with jinja2 3.x. We don't support 2.x any more. See [#73](https://github.com/christopher-ramirez/secretary/issues/73)
 * **0.2.19**: Fix bug in Markdown filter on Python 3. See [#47](https://github.com/christopher-ramirez/secretary/issues/47).
 * **0.2.18**:
     1. Auto escaping of Secretary URL scheme was not working on Python 3.
