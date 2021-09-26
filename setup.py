@@ -26,7 +26,7 @@ class PyTest(TestCommand):
 
 setup(
     name='secretary',
-    version='0.2.19',
+    version='0.3.0',
     url='https://github.com/christopher-ramirez/secretary',
     license='MIT',
     author='Christopher Ramírez',
@@ -36,7 +36,7 @@ setup(
     py_modules=['secretary', 'markdown_map'],
     platforms='any',
     install_requires=[
-        'Jinja2', 'markdown2'
+        'Jinja2>=3.0.0', 'markdown2'
     ],
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
