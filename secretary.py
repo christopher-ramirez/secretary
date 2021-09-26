@@ -143,7 +143,7 @@ class Renderer(object):
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
-            self.environment.globals['SafeValue'] = jinja2.Markup
+            self.environment.globals['SafeValue'] = Markup
 
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
