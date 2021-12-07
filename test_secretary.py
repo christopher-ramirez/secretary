@@ -66,7 +66,7 @@ class RenderTestCase(TestCase):
 
     def test_list_available_tags(self):
         print (self.engine.tags_in_document(self.template))
-        assert self.engine.tags_in_document(self.template) == []
+        assert len(self.engine.tags_in_document(self.template)) == 17
 
 
 class EscapingVariablesValues(TestCase):
