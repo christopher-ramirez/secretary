@@ -299,6 +299,17 @@ class Renderer(object):
                 continue
 
             yield tag
+    
+    def tags_in_document(self,template):
+        """
+            returns a list of available jinja instructions tags in template file.
+        """
+        self.files = self._unpack_template(template)
+        self.content  = parseString(self.files['content.xml'])
+        self.styles   = parseString(self.files['styles.xml'])
+        dom_tags = [*self._tags_in_document(self.content)] + [*self._tags_in_document(self.styles)]
+
+        return [tag.childNodes[0].data.strip() for tag in dom_tags]
 
 
     def _census_tags(self, document):

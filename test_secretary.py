@@ -23,11 +23,11 @@ class RenderTestCase(TestCase):
     def setUp(self):
         root = os.path.dirname(__file__)
         impl = getDOMImplementation()
-        template = os.path.join(root, 'simple_template.odt')
+        self.template = os.path.join(root, 'simple_template.odt')
 
         self.document = impl.createDocument(None, "some_tag", None)
         self.engine = Renderer()
-        self.engine.render(template)
+        self.engine.render(self.template)
 
     def test__unescape_entities(self):
         test_samples = {
@@ -63,6 +63,10 @@ class RenderTestCase(TestCase):
 
     def test_create_text_span_node(self):
         assert self.engine.create_text_span_node(self.document, 'text').toxml() == '<text:span>text</text:span>'
+
+    def test_list_available_tags(self):
+        print (self.engine.tags_in_document(self.template))
+        assert len(self.engine.tags_in_document(self.template)) == 17
 
 
 class EscapingVariablesValues(TestCase):
