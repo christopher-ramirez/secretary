@@ -35,7 +35,8 @@ from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
-from jinja2 import Environment, Undefined, Markup
+from jinja2 import Environment, Undefined
+from markupsafe import Markup
 
 PY2 = sys.version_info < (3, 0)
 
@@ -148,7 +149,7 @@ class Renderer(object):
 
         self._compile_tags_expressions()
 
-    @jinja2.evalcontextfilter
+    @jinja2.pass_eval_context
     def finalize_value(self, value, *args):
         """Escapes variables values."""
         if isinstance(value, Markup):

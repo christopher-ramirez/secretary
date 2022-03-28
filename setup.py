@@ -36,7 +36,7 @@ setup(
     py_modules=['secretary', 'markdown_map'],
     platforms='any',
     install_requires=[
-        'Jinja2', 'markdown2'
+        'Jinja2', 'markdown2', 'MarkupSafe'
     ],
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
