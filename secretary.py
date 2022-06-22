@@ -149,7 +149,6 @@ class Renderer(object):
 
         self._compile_tags_expressions()
 
-    @jinja2.pass_eval_context
     def finalize_value(self, value, *args):
         """Escapes variables values."""
         if isinstance(value, Markup):
