@@ -35,7 +35,8 @@ from mimetypes import guess_type, guess_extension
 from uuid import uuid4
 from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError, ErrorString
-from jinja2 import Environment, Undefined, Markup
+from jinja2 import Environment, Undefined
+from markupsafe import Markup
 
 PY2 = sys.version_info < (3, 0)
 
@@ -141,14 +142,13 @@ class Renderer(object):
             self.environment.filters['pad'] = pad_string
             self.environment.filters['markdown'] = self.markdown_filter
             self.environment.filters['image'] = self.image_filter
-            self.environment.globals['SafeValue'] = jinja2.Markup
+            self.environment.globals['SafeValue'] = Markup
 
         self.media_path = kwargs.pop('media_path', '')
         self.media_callback = self.fs_loader
 
         self._compile_tags_expressions()
 
-    @jinja2.evalcontextfilter
     def finalize_value(self, value, *args):
         """Escapes variables values."""
         if isinstance(value, Markup):
